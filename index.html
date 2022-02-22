@@ -1,0 +1,134 @@
+<h1 id="16-889-assignment-1-rendering-basics-with-pytorch3d">16-889 Assignment 1: Rendering Basics with PyTorch3D</h1>
+<p>Note:</p>
+<ul>
+<li>Most of the parameters have been hardcoded to get the required gif result.</li>
+<li>The command to run a question is shared in the corresponding question section.</li>
+</ul>
+<h2 id="1-practicing-with-cameras">1. Practicing with Cameras</h2>
+<h3 id="1-1-360-degree-renders-5-points-">1.1. 360-degree Renders (5 points)</h3>
+<pre><code class="lang-bash">python3 main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">1.1</span>
+</code></pre>
+<p><img src="output/cow_360.gif" alt="Cow"></p>
+<h3 id="1-2-re-creating-the-dolly-zoom-10-points-">1.2 Re-creating the Dolly Zoom (10 points)</h3>
+<pre><code class="lang-bash">python3 main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">1.2</span>
+</code></pre>
+<p><img src="output/cow_dolly.gif" alt="Cow Dolly Zoom"></p>
+<h2 id="2-practicing-with-meshes">2. Practicing with Meshes</h2>
+<h3 id="2-1-constructing-a-tetrahedron-5-points-">2.1 Constructing a Tetrahedron (5 points)</h3>
+<pre><code class="lang-bash">python3 main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">2.1</span>
+</code></pre>
+<p><img src="output/tetrahedron.gif" alt="Tetrahedron"></p>
+<ul>
+<li>Vertices - 4</li>
+<li>Faces (Triangular) - 4</li>
+</ul>
+<h3 id="2-2-constructing-a-cube-5-points-">2.2 Constructing a Cube (5 points)</h3>
+<pre><code class="lang-bash">python3 main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">2.2</span>
+</code></pre>
+<p><img src="output/cube.gif" alt="Cube"></p>
+<ul>
+<li>Vertices - 8</li>
+<li>Faces (Triangular) - 12</li>
+</ul>
+<h2 id="3-re-texturing-a-mesh-10-points-">3. Re-texturing a mesh (10 points)</h2>
+<pre><code class="lang-bash">python3 main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">3</span>
+</code></pre>
+<p><img src="output/retextured_mesh.gif" alt="Cow Restextured"></p>
+<ul>
+<li><code>color1 = [0, 0.6, 0.6]</code>  and <code>color2 = [0.8, 0, 0.4]</code>.</li>
+<li>Color1 is essentially dark cyan with a hint of teal.</li>
+<li>Color2 is some shade similar to magenta.</li>
+<li>I chose thess colors cause they look pretty :)</li>
+</ul>
+<h2 id="4-camera-transformations-20-points-">4. Camera Transformations (20 points)</h2>
+<pre><code class="lang-bash">python3 main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">4</span>
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Transform</th>
+<th>Intuition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Flipped</td>
+<td>R_relative is such that the axes are rotated about the z-axis. The matrix is created by understanding what the new axes would be oriented towards after rotation. The cow model needs to be rotated by 90 in clockwise. Thus, the camera is rotated by 90 counter-clockwise. Since the rotation is about the z axis, there&#39;s no need to change the position of the camera. So, T_relative would be all 0s.</td>
+</tr>
+<tr>
+<td>Moved Away</td>
+<td>The cow seems further away. This is done by moving the camera away. Thus, a further translation (T_relative) of 2 is added on top of the original 3. Thus, the camera is now at (0, 0, -5).</td>
+</tr>
+<tr>
+<td>Shifted</td>
+<td>The cow moves towards left and a bit upwards with respect to the camera as compared to the original. Thus, the camera is moved in the opposite manner - right (+ve x-axis) and down (-ve y axis).</td>
+</tr>
+<tr>
+<td>Side-view</td>
+<td>The cow is rotated by 90 clockwise about the positive y axis. Thus, the camera is first rotated 90 clounter-clockwise about y axis. Now along the rotated axes, the camera needs to be moved in its -ve x axis to reach the world fram origin and then along its +ve z axis to get the sideview.</td>
+</tr>
+</tbody>
+</table>
+<p><img src="output/textured_cow-0.jpg" alt="CowRender2">
+<img src="output/textured_cow-1.jpg" alt="CowRender1">
+<img src="output/textured_cow-2.jpg" alt="CowRender3">
+<img src="output/textured_cow-3.jpg" alt="CowRender4"></p>
+<h2 id="5-rendering-generic-3d-representations">5. Rendering Generic 3D Representations</h2>
+<h3 id="5-1-rendering-point-clouds-from-rgb-d-images-10-points-">5.1 Rendering Point Clouds from RGB-D Images (10 points)</h3>
+<pre><code class="lang-bash">python3 main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">5.1</span>
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Plant1</th>
+<th>Plant2</th>
+<th>Plant_union</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="output/plant1.gif" alt="Plant1"></td>
+<td><img src="output/plant2.gif" alt="Plant2"></td>
+<td><img src="output/plant_union.gif" alt="Plant_union"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-2-parametric-functions-10-points-">5.2 Parametric Functions (10 points)</h3>
+<pre><code class="lang-bash">python3 main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">5.2</span> -n <span class="hljs-number">100</span>
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Torus 100</th>
+<th>Torus 1000</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="output/torus.gif" alt="Torus100"></td>
+<td><img src="output/torus_1000.gif" alt="Torus1000"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-3-implicit-surfaces-15-points-">5.3 Implicit Surfaces (15 points)</h3>
+<pre><code class="lang-bash">python3 main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">5.3</span>
+</code></pre>
+<p><img src="output/torus_mesh.gif" alt="TorusMesh"></p>
+<p><strong>As per the rendering experience, meshes are easier and faster to render while retaining most of the 3d representational information. For a higher number of sampled points, the point cloud and mesh representations both have similar quality. However, mesh is able to render better at a faster speed and so, is more convenient to use.</strong></p>
+<h2 id="6-do-something-fun-10-points-">6. Do Something Fun (10 points)</h2>
+<pre><code class="lang-bash">python3 main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">6</span>
+</code></pre>
+<p><strong>UFO and an Alien</strong><br>
+<img src="output/ufo.gif" alt="UFO"></p>
+<p><strong>I have used models of an alien and a UFO. I was able to align and make these camera facing by using different rotation matrices. Also, to get the intended motion, I had to play around with the translation matrices.</strong></p>
+<h2 id="-extra-credit-7-sampling-points-on-meshes-10-points-">(Extra Credit) 7. Sampling Points on Meshes (10 points)</h2>
+<pre><code class="lang-bash">python3 main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">7</span> -n <span class="hljs-number">10000</span>
+</code></pre>
+<p><strong>10 points sampled</strong><br>
+<img src="output/cow_360.gif" alt="Cow"><img src="output/cow_point_cloud-10.gif" alt="Cow_10"><br><br>
+<strong>100 points sampled</strong><br>
+<img src="output/cow_360.gif" alt="Cow"><img src="output/cow_point_cloud-100.gif" alt="Cow_100"><br><br>
+<strong>1000 points sampled</strong><br>
+<img src="output/cow_360.gif" alt="Cow"><img src="output/cow_point_cloud-1000.gif" alt="Cow_1000"><br><br>
+<strong>10000 points sampled</strong><br>
+<img src="output/cow_360.gif" alt="Cow"><img src="output/cow_point_cloud-10000.gif" alt="Cow_10000"><br><br></p>
