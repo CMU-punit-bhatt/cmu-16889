@@ -3,16 +3,16 @@ import os
 import time
 
 import losses
-from pytorch3d.utils import ico_sphere
-from r2n2_custom import R2N2
-from pytorch3d.ops import sample_points_from_meshes
-from pytorch3d.structures import Meshes
 import dataset_location
 import torch
 
-
-
-
+from pytorch3d.utils import ico_sphere
+from pytorch3d.structures import Meshes
+from pytorch3d.ops import sample_points_from_meshes
+from r2n2_custom import R2N2
+from utils_viz import (visualize_voxels_as_mesh,
+                       visualize_point_cloud,
+                       visualize_mesh)
 
 
 def get_args_parser():
@@ -61,9 +61,8 @@ def fit_mesh(mesh_src, mesh_tgt, args):
 
     print('Done!')
 
-
-    
-
+    visualize_mesh(mesh_src.cpu().detach(), output_path='mesh_src.gif')
+    visualize_mesh(mesh_tgt.cpu().detach(), output_path='mesh_tgt.gif')
 
 
 def fit_pointcloud(pointclouds_src, pointclouds_tgt, args):
@@ -88,6 +87,10 @@ def fit_pointcloud(pointclouds_src, pointclouds_tgt, args):
     
     print('Done!')
 
+    visualize_point_cloud(pointclouds_src.cpu().detach().squeeze(0),
+                          output_path='point_clouds_src.gif')
+    visualize_point_cloud(pointclouds_tgt.cpu().detach().squeeze(0),
+                          output_path='point_clouds_tgt.gif')
 
 def fit_voxel(voxels_src, voxels_tgt, args):
     start_iter = 0
@@ -110,6 +113,12 @@ def fit_voxel(voxels_src, voxels_tgt, args):
         print("[%4d/%4d]; ttime: %.0f (%.2f); loss: %.3f" % (step, args.max_iter, total_time,  iter_time, loss_vis))
     
     print('Done!')
+
+    visualize_voxels_as_mesh(voxels_src.cpu().detach().squeeze(0),
+                             output_path='voxels_src.gif')
+    visualize_voxels_as_mesh(voxels_tgt.cpu().detach().squeeze(0),
+                             output_path='voxels_tgt.gif')
+
 
 
 def train_model(args):
@@ -152,11 +161,6 @@ def train_model(args):
 
         # fitting
         fit_mesh(mesh_src, mesh_tgt, args)        
-
-
-    
-    
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Model Fit', parents=[get_args_parser()])
