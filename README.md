@@ -1,5 +1,8 @@
 # 16-889 Assignment 2: Single View to 3D
 
+## Late Days used - 2
+
+
 Goals: In this assignment, you will explore the types of loss and decoder functions for regressing to voxels, point clouds, and mesh representation from single view RGB input.
 
 Note:
@@ -11,6 +14,12 @@ Note:
 
 ```bash
 python fit_data.py --type 'vox'
+```
+
+OR
+
+```bash
+python main.py -q 1.1
 ```
 
 - Corresponding loss code can be found [here](./losses.py)
@@ -28,6 +37,12 @@ python fit_data.py --type 'vox'
 python fit_data.py --type 'point'
 ```
 
+OR
+
+```bash
+python main.py -q 1.2
+```
+
 - Corresponding loss code can be found [here](./losses.py)
 - Corresponding visualization code can be found [here (visualize_point_cloud)](./utils_viz.py)
 
@@ -41,6 +56,12 @@ python fit_data.py --type 'point'
 
 ```bash
 python fit_data.py --type 'mesh'
+```
+
+OR
+
+```bash
+python main.py -q 1.3
 ```
 
 - Corresponding loss code can be found [here](./losses.py)
@@ -65,6 +86,12 @@ python train_model.py --type 'vox' --max_iter 10001 --save_freq 2000
 python eval_model.py --type 'vox' --load_checkpoint --load_step 10000 --vis_freq 20
 ```
 
+OR
+
+```bash
+python main.py -q 2.1
+```
+
 - Decoder architecture can be found [here](./model.py)
 
 **Visualizing 3 examples**
@@ -83,6 +110,12 @@ python train_model.py --type 'point' --max_iter 10001 --save_freq 2000
 
 # For evaluation
 python eval_model.py --type 'point' --load_checkpoint --load_step 10000 --vis_freq 20
+```
+
+OR
+
+```bash
+python main.py -q 2.2
 ```
 
 - Decoder architecture can be found [here](./model.py)
@@ -106,6 +139,12 @@ python train_model.py --type 'mesh' --max_iter 10001 --save_freq 2000
 python eval_model.py --type 'mesh' --load_checkpoint --load_step 10000 --vis_freq 20
 ```
 
+OR
+
+```bash
+python main.py -q 2.3
+```
+
 - Decoder architecture can be found [here](./model.py)
 
 **Visualizing 3 examples**
@@ -124,7 +163,7 @@ python eval_model.py --type 'mesh' --load_checkpoint --load_step 10000 --vis_fre
 
 - Point clouds perform better than mesh as they are easier to predict and do not have the deformation constraints that meshes have. While the mesh decoder too outputs just vertex coordinates, it needs to learn about the connectivity between them as part of the initial shape (sphere in this case). So, the model is expected to understand more in comparison to the point cloud decoder and thus, the performance difference.
 - Another reason why meshes do not perform/look as good is because of the initial shape itself. Chairs with holes cannot be predicted by this model because the initial shape/structure and its connectivity restricts it from deforming in that manner.
-- Voxels seem to have performed the worse but I believe this is down to a few factors. The average dropped due to bad performance on some of the images. Where it did well, the visualizations looked really good. Thus, a slightly complex decoder would have led to better results (couldn't experiment due to time and compute constraints).
+- Voxels seem to have performed the worse. This makes sense as voxel predictions are restricted due to their resolution whereas mesh and point clouds have complete control over where a vertex lies in space. Besides this, the output is supposed to include both the occupied and unoccupied spaces - another additional complication for the model to learn accurately.
 
 ### 2.5. Analyse effects of hyperparms variations (10 points)
 
@@ -135,13 +174,17 @@ The chamfer loss is being calculated as the sum of the distances and so, as `n_p
 
     ![image](results/2.5/n_points.png)
 
-- `w_smooth` - The obvious next step was to increase the smoothness weight. As the smoothness was increased (to great extents), the focus of the model shifted from accurately representing the chair to ensuring smoothness. As the value was increased, the resulting chairs were smoother but hardly showed any variations.
+- `w_smooth` - The obvious next step was to increase the smoothness weight. As the smoothness was increased (to great extents), the focus of the model shifted from accurately representing the chair to ensuring smoothness. As the value was increased, the resulting chairs were smoother but hardly showed any variations (all chairs looked the same as below).
 
-    ![image](results/2.5/smooth1.png)
+    | w_smooth 100 |
+    | ------------ |
+    | ![image](results/2.5/smooth1.png) |
 
     And when the weight was pushed to a very high value, the model insisted on keeping everything planar and so, there were hardly any deformations in the sphere it began with.
 
-    ![image](results/2.5/smooth2.png)
+    | w_smooth 700 |
+    | ------------ |
+    | ![image](results/2.5/smooth2.png) |
 
 - `ico_sphere level` - The initial experiments of my mesh model always resulted in chair meshes with spiky legs. I believed this to be due the limited vertices and connectivity in the sphere. So, by increasing the level, I was able to increase the number of vertices and faces. I had to also increase the model complexity to handle the higher number of values to be predicted. The resulting images had much more rectangular structure in the legs.
 
@@ -164,13 +207,13 @@ For this question, all my experiments and observations are based on the point cl
 
     As can be seen, the decoder contains the basic structure of a chair.
 
-- `Latent Space Manipulation` - In order to understand the kind of information that the encoder captures, I tried to combine 2 encoded feature vectors at different weights
+- `Latent Space Interpolation` - I tried to combine 2 encoded feature vectors (from 2 images at random) at different weights. The idea was that the combination of 2 encoded features representing the same object (different instances) would result in a new encoding of the object. And that the decoder would be able to understand and correctly predict it.
 
     | encoded2 | 0.25 * encoded1 + 0.75 encoded2 | 0.5 * encoded1 + 0.5 encoded2 | 0.75 * encoded1 + 0.25 encoded2 | encoded1 |
     | ------ | ----- | ----- | ----- | ----- |
     | ![image](results/2.6/interpret_0.0_point.gif) | ![image](results/2.6/interpret_0.25_point.gif) | ![image](results/2.6/interpret_0.5_point.gif) | ![image](results/2.6/interpret_0.75_point.gif) | ![image](results/2.6/interpret_1.0_point.gif) |
 
-    From the above outputs, it is clear that the encoder captures information about different aspects of chair such as height, width, concavity, length of legs etc.
+    From the above outputs, it is clear that the encoder captures information about different aspects of chair such as height, width, concavity, length of legs etc. Combination of encoded vectors thus results in a change in a new object with a modification in these properties.
 
 ## 3. (Extra Credit) Exploring some recent architectures.
 

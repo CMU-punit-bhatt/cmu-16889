@@ -1,0 +1,322 @@
+<h1 id="16-889-assignment-2-single-view-to-3d">16-889 Assignment 2: Single View to 3D</h1>
+<h2 id="late-days-used-2">Late Days used - 2</h2>
+<p>Goals: In this assignment, you will explore the types of loss and decoder functions for regressing to voxels, point clouds, and mesh representation from single view RGB input.</p>
+<p>Note:</p>
+<ol>
+<li>The instructions to run are mentioned in each section.</li>
+</ol>
+<h2 id="1-exploring-loss-functions">1. Exploring loss functions</h2>
+<h3 id="1-1-fitting-a-voxel-grid-5-points-">1.1. Fitting a voxel grid (5 points)</h3>
+<pre><code class="lang-bash"><span class="hljs-keyword">python</span> fit_data.<span class="hljs-keyword">py</span> --<span class="hljs-built_in">type</span> <span class="hljs-string">'vox'</span>
+</code></pre>
+<p>OR</p>
+<pre><code class="lang-bash">python main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">1.1</span>
+</code></pre>
+<ul>
+<li>Corresponding loss code can be found <a href="./losses.py">here</a></li>
+<li>Corresponding visualization code can be found <a href="./utils_viz.py">here (visualize_voxels_as_mesh)</a></li>
+</ul>
+<p><strong>Visualization</strong></p>
+<table>
+<thead>
+<tr>
+<th>Optimized Voxel</th>
+<th>Ground Truth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="./output/voxels_src.gif" alt="src"></td>
+<td><img src="./output/voxels_tgt.gif" alt="src"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="1-2-fitting-a-point-cloud-10-points-">1.2. Fitting a point cloud (10 points)</h3>
+<pre><code class="lang-bash"><span class="hljs-keyword">python</span> fit_data.<span class="hljs-keyword">py</span> --<span class="hljs-built_in">type</span> <span class="hljs-string">'point'</span>
+</code></pre>
+<p>OR</p>
+<pre><code class="lang-bash">python main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">1.2</span>
+</code></pre>
+<ul>
+<li>Corresponding loss code can be found <a href="./losses.py">here</a></li>
+<li>Corresponding visualization code can be found <a href="./utils_viz.py">here (visualize_point_cloud)</a></li>
+</ul>
+<p><strong>Visualization</strong></p>
+<table>
+<thead>
+<tr>
+<th>Optimized Point Cloud</th>
+<th>Ground Truth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="./output/point_clouds_src.gif" alt="src"></td>
+<td><img src="./output/point_clouds_tgt.gif" alt="src"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="1-3-fitting-a-mesh-5-points-">1.3. Fitting a mesh (5 points)</h3>
+<pre><code class="lang-bash"><span class="hljs-keyword">python</span> fit_data.<span class="hljs-keyword">py</span> --<span class="hljs-built_in">type</span> <span class="hljs-string">'mesh'</span>
+</code></pre>
+<p>OR</p>
+<pre><code class="lang-bash">python main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">1.3</span>
+</code></pre>
+<ul>
+<li>Corresponding loss code can be found <a href="./losses.py">here</a></li>
+<li>Corresponding visualization code can be found <a href="./utils_viz.py">here (visualize_mesh)</a></li>
+</ul>
+<p><strong>Visualization</strong></p>
+<table>
+<thead>
+<tr>
+<th>Optimized Mesh</th>
+<th>Ground Truth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="./output/mesh_src.gif" alt="src"></td>
+<td><img src="./output/mesh_tgt.gif" alt="src"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-reconstructing-3d-from-single-view">2. Reconstructing 3D from single view</h2>
+<h3 id="2-1-image-to-voxel-grid-15-points-">2.1. Image to voxel grid (15 points)</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># For training</span>
+<span class="hljs-string">python </span><span class="hljs-string">train_model.</span><span class="hljs-string">py </span><span class="hljs-built_in">--type</span> <span class="hljs-string">'vox'</span> <span class="hljs-built_in">--max_iter</span> <span class="hljs-string">10001 </span><span class="hljs-built_in">--save_freq</span> <span class="hljs-string">2000
+</span>
+<span class="hljs-comment"># For evaluation</span>
+<span class="hljs-string">python </span><span class="hljs-string">eval_model.</span><span class="hljs-string">py </span><span class="hljs-built_in">--type</span> <span class="hljs-string">'vox'</span> <span class="hljs-built_in">--load_checkpoint</span> <span class="hljs-built_in">--load_step</span> <span class="hljs-string">10000 </span><span class="hljs-built_in">--vis_freq</span> <span class="hljs-string">20</span>
+</code></pre>
+<p>OR</p>
+<pre><code class="lang-bash">python main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">2.1</span>
+</code></pre>
+<ul>
+<li>Decoder architecture can be found <a href="./model.py">here</a></li>
+</ul>
+<p><strong>Visualizing 3 examples</strong></p>
+<table>
+<thead>
+<tr>
+<th>Ground Truth Image</th>
+<th>Ground Truth Voxel</th>
+<th>Predicted Voxel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/gt/280_gt.png" alt="image"></td>
+<td><img src="results/gt/280_gt.gif" alt="gt"></td>
+<td><img src="results/vox/280_vox.gif" alt="vox"></td>
+</tr>
+<tr>
+<td><img src="results/gt/300_gt.png" alt="image"></td>
+<td><img src="results/gt/300_gt.gif" alt="gt"></td>
+<td><img src="results/vox/300_vox.gif" alt="vox"></td>
+</tr>
+<tr>
+<td><img src="results/gt/400_gt.png" alt="image"></td>
+<td><img src="results/gt/400_gt.gif" alt="gt"></td>
+<td><img src="results/vox/400_vox.gif" alt="vox"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="2-2-image-to-point-cloud-15-points-">2.2. Image to point cloud (15 points)</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># For training</span>
+<span class="hljs-string">python </span><span class="hljs-string">train_model.</span><span class="hljs-string">py </span><span class="hljs-built_in">--type</span> <span class="hljs-string">'point'</span> <span class="hljs-built_in">--max_iter</span> <span class="hljs-string">10001 </span><span class="hljs-built_in">--save_freq</span> <span class="hljs-string">2000
+</span>
+<span class="hljs-comment"># For evaluation</span>
+<span class="hljs-string">python </span><span class="hljs-string">eval_model.</span><span class="hljs-string">py </span><span class="hljs-built_in">--type</span> <span class="hljs-string">'point'</span> <span class="hljs-built_in">--load_checkpoint</span> <span class="hljs-built_in">--load_step</span> <span class="hljs-string">10000 </span><span class="hljs-built_in">--vis_freq</span> <span class="hljs-string">20</span>
+</code></pre>
+<p>OR</p>
+<pre><code class="lang-bash">python main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">2.2</span>
+</code></pre>
+<ul>
+<li>Decoder architecture can be found <a href="./model.py">here</a></li>
+</ul>
+<p><strong>Visualizing 3 examples</strong></p>
+<table>
+<thead>
+<tr>
+<th>Ground Truth Image</th>
+<th>Ground Truth Voxel</th>
+<th>Predicted Voxel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/gt/80_gt.png" alt="image"></td>
+<td><img src="results/gt/80_gt.gif" alt="gt"></td>
+<td><img src="results/point/80_point.gif" alt="vox"></td>
+</tr>
+<tr>
+<td><img src="results/gt/100_gt.png" alt="image"></td>
+<td><img src="results/gt/100_gt.gif" alt="gt"></td>
+<td><img src="results/point/100_point.gif" alt="vox"></td>
+</tr>
+<tr>
+<td><img src="results/gt/440_gt.png" alt="image"></td>
+<td><img src="results/gt/440_gt.gif" alt="gt"></td>
+<td><img src="results/point/440_point.gif" alt="vox"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="2-3-image-to-mesh-15-points-">2.3. Image to mesh (15 points)</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># For training</span>
+<span class="hljs-string">python </span><span class="hljs-string">train_model.</span><span class="hljs-string">py </span><span class="hljs-built_in">--type</span> <span class="hljs-string">'mesh'</span> <span class="hljs-built_in">--max_iter</span> <span class="hljs-string">10001 </span><span class="hljs-built_in">--save_freq</span> <span class="hljs-string">2000
+</span>
+<span class="hljs-comment"># For evaluation</span>
+<span class="hljs-string">python </span><span class="hljs-string">eval_model.</span><span class="hljs-string">py </span><span class="hljs-built_in">--type</span> <span class="hljs-string">'mesh'</span> <span class="hljs-built_in">--load_checkpoint</span> <span class="hljs-built_in">--load_step</span> <span class="hljs-string">10000 </span><span class="hljs-built_in">--vis_freq</span> <span class="hljs-string">20</span>
+</code></pre>
+<p>OR</p>
+<pre><code class="lang-bash">python main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">2.3</span>
+</code></pre>
+<ul>
+<li>Decoder architecture can be found <a href="./model.py">here</a></li>
+</ul>
+<p><strong>Visualizing 3 examples</strong></p>
+<table>
+<thead>
+<tr>
+<th>Ground Truth Image</th>
+<th>Ground Truth Voxel</th>
+<th>Predicted Voxel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/gt/80_gt.png" alt="image"></td>
+<td><img src="results/gt/80_gt.gif" alt="gt"></td>
+<td><img src="results/mesh/80_mesh.gif" alt="vox"></td>
+</tr>
+<tr>
+<td><img src="results/gt/100_gt.png" alt="image"></td>
+<td><img src="results/gt/100_gt.gif" alt="gt"></td>
+<td><img src="results/mesh/100_mesh.gif" alt="vox"></td>
+</tr>
+<tr>
+<td><img src="results/gt/440_gt.png" alt="image"></td>
+<td><img src="results/gt/440_gt.gif" alt="gt"></td>
+<td><img src="results/mesh/440_mesh.gif" alt="vox"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="2-4-quantitative-comparisions-10-points-">2.4. Quantitative comparisions(10 points)</h3>
+<table>
+<thead>
+<tr>
+<th>Avg F1@0.05 Vox</th>
+<th>Avg F1@0.05 Point</th>
+<th>Avg F1@0.05 Mesh</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>74.439</td>
+<td>90.849</td>
+<td>87.206</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Point clouds perform better than mesh as they are easier to predict and do not have the deformation constraints that meshes have. While the mesh decoder too outputs just vertex coordinates, it needs to learn about the connectivity between them as part of the initial shape (sphere in this case). So, the model is expected to understand more in comparison to the point cloud decoder and thus, the performance difference.</li>
+<li>Another reason why meshes do not perform/look as good is because of the initial shape itself. Chairs with holes cannot be predicted by this model because the initial shape/structure and its connectivity restricts it from deforming in that manner.</li>
+<li>Voxels seem to have performed the worse. This makes sense as voxel predictions are restricted due to their resolution whereas mesh and point clouds have complete control over where a vertex lies in space. Besides this, the output is supposed to include both the occupied and unoccupied spaces - another additional complication for the model to learn accurately.</li>
+</ul>
+<h3 id="2-5-analyse-effects-of-hyperparms-variations-10-points-">2.5. Analyse effects of hyperparms variations (10 points)</h3>
+<p>I tried playing around with the different tunable hyperparameters. I observed the following</p>
+<ul>
+<li><p><code>n_points</code> - In case of meshes, the loss is given by<br>
+<code>loss = args.w_chamfer * loss_reg + args.w_smooth * loss_smooth</code><br>
+The chamfer loss is being calculated as the sum of the distances and so, as <code>n_points</code> parameter is increased the number of points increases. With the chamfer loss being proportional to the number of points, it contributed more to the loss than the smoothness loss. Thus, the model, in this case, learns to lower the chamfer loss and so, the resulting meshes end up being spiky as the smoothness aspects are not touched.</p>
+<p>  <img src="results/2.5/n_points.png" alt="image"></p>
+</li>
+<li><p><code>w_smooth</code> - The obvious next step was to increase the smoothness weight. As the smoothness was increased (to great extents), the focus of the model shifted from accurately representing the chair to ensuring smoothness. As the value was increased, the resulting chairs were smoother but hardly showed any variations (all chairs looked the same as below).</p>
+    <table>
+        <thead>
+        <tr>
+        <th>w_smooth 100</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><img src="results/2.5/smooth1.png" alt="image"></td>
+        </tr>
+        </tbody>
+        </table>
+
+<p>  And when the weight was pushed to a very high value, the model insisted on keeping everything planar and so, there were hardly any deformations in the sphere it began with.</p>
+<table>
+    <thead>
+    <tr>
+    <th>w_smooth 700</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td><img src="results/2.5/smooth2.png" alt="image"></td>
+    </tr>
+    </tbody>
+    </table>
+
+</li>
+<li><p><code>ico_sphere level</code> - The initial experiments of my mesh model always resulted in chair meshes with spiky legs. I believed this to be due the limited vertices and connectivity in the sphere. So, by increasing the level, I was able to increase the number of vertices and faces. I had to also increase the model complexity to handle the higher number of values to be predicted. The resulting images had much more rectangular structure in the legs.</p>
+    <table>
+        <thead>
+        <tr>
+        <th>level 4</th>
+        <th>level 6</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><img src="results/2.5/level1.jpeg" alt="image1"></td>
+        <td><img src="results/2.5/level2.gif" alt="image2"></td>
+        </tr>
+        </tbody>
+        </table>
+
+</li>
+</ul>
+<h3 id="2-6-interpret-your-model-15-points-">2.6. Interpret your model (15 points)</h3>
+<pre><code class="lang-bash"><span class="hljs-comment">!python</span> <span class="hljs-comment">interpret_model</span><span class="hljs-string">.</span><span class="hljs-comment">py</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span><span class="hljs-comment">load_step</span> <span class="hljs-comment">10000</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span><span class="hljs-comment">index1</span> <span class="hljs-comment">100</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span><span class="hljs-comment">index2</span> <span class="hljs-comment">340</span>
+</code></pre>
+<p>For this question, all my experiments and observations are based on the point cloud encoder-decoder model.</p>
+<ul>
+<li><p><code>What has the decoder learned</code> - One of the first thoughts that came to my mind when I saw this question was to actually understand what kind of information the decoder contains. In order to view this, I just ran the trained decoder on an encoded feature vector containing zeros. The output was the following</p>
+<p>  <img src="results/2.6/interpret_decoder.gif" alt="image"></p>
+<p>  As can be seen, the decoder contains the basic structure of a chair.</p>
+</li>
+<li><p><code>Latent Space Interpolation</code> - I tried to combine 2 encoded feature vectors (from 2 images at random) at different weights. The idea was that the combination of 2 encoded features representing the same object (different instances) would result in a new encoding of the object. And that the decoder would be able to understand and correctly predict it.</p>
+<table>
+<thead>
+<tr>
+<th>encoded2</th>
+<th>0.25 * encoded1 + 0.75 encoded2</th>
+<th>0.5 * encoded1 + 0.5 encoded2</th>
+<th>0.75 * encoded1 + 0.25 encoded2</th>
+<th>encoded1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/2.6/interpret_0.0_point.gif" alt="image"></td>
+<td><img src="results/2.6/interpret_0.25_point.gif" alt="image"></td>
+<td><img src="results/2.6/interpret_0.5_point.gif" alt="image"></td>
+<td><img src="results/2.6/interpret_0.75_point.gif" alt="image"></td>
+<td><img src="results/2.6/interpret_1.0_point.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+
+<p>  From the above outputs, it is clear that the encoder captures information about different aspects of chair such as height, width, concavity, length of legs etc. Combination of encoded vectors thus results in a change in a new object with a modification in these properties.</p>
+</li>
+</ul>
+<h2 id="3-extra-credit-exploring-some-recent-architectures-">3. (Extra Credit) Exploring some recent architectures.</h2>
+<h3 id="3-1-implicit-network-10-points-">3.1 Implicit network (10 points)</h3>
+<p>Implement a implicit decoder that takes in as input 3D locations and outputs the occupancy value.
+Some papers for inspiration [<a href="https://arxiv.org/abs/2003.04618">1</a>,<a href="https://arxiv.org/abs/1812.03828">2</a>]</p>
+<h3 id="3-2-parametric-network-10-points-">3.2 Parametric network (10 points)</h3>
+<p>Implement a parametric function that takes in as input sampled 2D points and outputs their respective 3D point.
+Some papers for inspiration [<a href="https://arxiv.org/abs/1802.05384">1</a>,<a href="https://arxiv.org/abs/1811.10943">2</a>]</p>
