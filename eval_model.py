@@ -10,19 +10,30 @@ from pytorch3d.ops import sample_points_from_meshes
 from pytorch3d.ops import knn_points
 import mcubes
 import utils_vox
+import matplotlib.pyplot as plt
+
+from utils_viz import (
+    visualize_voxels_as_mesh_image,
+    visualize_point_cloud_image,
+    visualize_mesh_image,
+    visualize_voxels_as_mesh,
+    visualize_point_cloud,
+    visualize_mesh
+)
 
 def get_args_parser():
     parser = argparse.ArgumentParser('Singleto3D', add_help=False)
     parser.add_argument('--arch', default='resnet18', type=str)
-    parser.add_argument('--max_iter', default=10000, type=str)
-    parser.add_argument('--vis_freq', default=1000, type=str)
-    parser.add_argument('--batch_size', default=1, type=str)
-    parser.add_argument('--num_workers', default=0, type=str)
+    parser.add_argument('--max_iter', default=10000, type=int)
+    parser.add_argument('--vis_freq', default=1000, type=int)
+    parser.add_argument('--batch_size', default=1, type=int)
+    parser.add_argument('--num_workers', default=0, type=int)
     parser.add_argument('--type', default='vox', choices=['vox', 'point', 'mesh'], type=str)
     parser.add_argument('--n_points', default=5000, type=int)
     parser.add_argument('--w_chamfer', default=1.0, type=float)
-    parser.add_argument('--w_smooth', default=0.1, type=float)  
-    parser.add_argument('--load_checkpoint', action='store_true')  
+    parser.add_argument('--w_smooth', default=0.1, type=float)
+    parser.add_argument('--load_checkpoint', action='store_true')
+    parser.add_argument('--load_step', default=10000, type=int)
     return parser
 
 def preprocess(feed_dict):
@@ -73,8 +84,13 @@ def evaluate(predictions, mesh_gt, args):
         voxels_src = predictions
         H,W,D = voxels_src.shape[2:]
         vertices_src, faces_src = mcubes.marching_cubes(voxels_src.detach().cpu().squeeze().numpy(), isovalue=0.5)
+
         vertices_src = torch.tensor(vertices_src).float()
         faces_src = torch.tensor(faces_src.astype(int))
+
+        if vertices_src.size(0) == 0:
+            return None
+
         mesh_src = pytorch3d.structures.Meshes([vertices_src], [faces_src])
         pred_points = sample_points_from_meshes(mesh_src, args.n_points)
         pred_points = utils_vox.Mem2Ref(pred_points, H, W, D)
@@ -84,7 +100,7 @@ def evaluate(predictions, mesh_gt, args):
         pred_points = sample_points_from_meshes(predictions, args.n_points).cpu()
 
     gt_points = sample_points_from_meshes(mesh_gt, args.n_points)
-        
+
     metrics = compute_sampling_metrics(pred_points, gt_points)
     return metrics
 
@@ -112,10 +128,10 @@ def evaluate_model(args):
     avg_f1_score = []
 
     if args.load_checkpoint:
-        checkpoint = torch.load(f'checkpoint_{args.type}.pth')
+        checkpoint = torch.load(f'checkpoint_{args.type}_{args.load_step}.pth')
         model.load_state_dict(checkpoint['model_state_dict'])
         print(f"Succesfully loaded iter {start_iter}")
-    
+
     print("Starting evaluating !")
     max_iter = len(eval_loader)
     for step in range(start_iter, max_iter):
@@ -136,12 +152,28 @@ def evaluate_model(args):
 
         metrics = evaluate(predictions, mesh_gt, args)
 
+        if metrics is None:
+            print("[%4d/%4d]; ttime: %.0f (%.2f, %.2f); Mesh Empty" % (step, max_iter, total_time, read_time, iter_time))
+            continue
+
         # TODO:
-        # if (step % args.vis_freq) == 0:
-        #     # visualization block
-        #     #  rend = 
-        #     plt.imsave(f'vis/{step}_{args.type}.png', rend)
-      
+        if (step % args.vis_freq) == 0:
+            # visualization block
+            plt.imsave(f'results/{step}_gt.png',
+                       images_gt.squeeze(0).cpu().detach().numpy())
+            visualize_mesh(mesh_gt.cpu().detach(),
+                          output_path=f'results/{step}_gt.gif')
+
+            if args.type == 'vox':
+                visualize_voxels_as_mesh(predictions[0, 0].cpu().detach(),
+                                         output_path=f'results/{step}_{args.type}.gif')
+            elif args.type == 'point':
+                visualize_point_cloud(predictions[0].cpu().detach(),
+                                      output_path=f'results/{step}_{args.type}.gif')
+            elif args.type == 'mesh':
+                visualize_mesh(predictions.cpu().detach(),
+                               output_path=f'results/{step}_{args.type}.gif')
+
 
         total_time = time.time() - start_time
         iter_time = time.time() - iter_start_time

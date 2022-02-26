@@ -17,8 +17,7 @@ def chamfer_loss(point_cloud_src,point_cloud_tgt):
   src_tgt_nn = knn_points(point_cloud_src, point_cloud_tgt)
   tgt_src_nn = knn_points(point_cloud_tgt, point_cloud_src)
 
-  loss_chamfer = torch.sum(torch.square(src_tgt_nn.dists)) + \
-                 torch.sum(torch.square(tgt_src_nn.dists))
+  loss_chamfer = torch.sum(src_tgt_nn.dists) + torch.sum(tgt_src_nn.dists)
 	# implement chamfer loss from scratch
   return loss_chamfer
 

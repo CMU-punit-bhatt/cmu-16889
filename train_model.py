@@ -13,11 +13,11 @@ def get_args_parser():
     parser = argparse.ArgumentParser('Singleto3D', add_help=False)
     # Model parameters
     parser.add_argument('--arch', default='resnet18', type=str)
-    parser.add_argument('--lr', default=4e-4, type=str)
-    parser.add_argument('--max_iter', default=10000, type=str)
-    parser.add_argument('--log_freq', default=1000, type=str)
-    parser.add_argument('--batch_size', default=2, type=str)
-    parser.add_argument('--num_workers', default=0, type=str)
+    parser.add_argument('--lr', default=4e-4, type=float)
+    parser.add_argument('--max_iter', default=10000, type=int)
+    parser.add_argument('--log_freq', default=1000, type=int)
+    parser.add_argument('--batch_size', default=2, type=int)
+    parser.add_argument('--num_workers', default=0, type=int)
     parser.add_argument('--type', default='vox', choices=['vox', 'point', 'mesh'], type=str)
     parser.add_argument('--n_points', default=5000, type=int)
     parser.add_argument('--w_chamfer', default=1.0, type=float)
@@ -118,7 +118,7 @@ def train_model(args):
                 'step': step,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict()
-                }, f'checkpoint_{args.type}.pth')
+                }, f'checkpoint2_{args.type}_{step}.pth')
 
         print("[%4d/%4d]; ttime: %.0f (%.2f, %.2f); loss: %.3f" % (step, args.max_iter, total_time, read_time, iter_time, loss_vis))
 

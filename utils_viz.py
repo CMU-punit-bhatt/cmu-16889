@@ -42,7 +42,9 @@ def get_mesh_gif_360(vertices,
     if textures is None:
         # Get the vertices, faces, and textures.
         textures = torch.ones_like(vertices)  # (1, N_v, 3)
-        textures = textures * torch.tensor(color)  # (1, N_v, 3)
+        # textures = textures * torch.tensor(color)  # (1, N_v, 3)
+        textures = (vertices - vertices.min()) / \
+                   (vertices.max() - vertices.min())
     elif len(textures.shape) < 3:
         textures = textures.unsqueeze(0)
 
@@ -200,6 +202,7 @@ def visualize_point_cloud(points,
       device = get_device()
     
     rgbs = torch.ones_like(points) * torch.tensor(color)
+    # rgbs = (vertices - vertices.min()) / (vertices.max() - vertices.min())
 
     get_point_cloud_gif_360(points,
                             rgbs,
@@ -225,3 +228,141 @@ def visualize_mesh(mesh,
                      distance=distance,
                      fov=fov,
                      image_size=image_size)
+
+def visualize_voxels_as_mesh_image(voxels,
+                                   voxel_size=32,
+                                   image_size=256,
+                                   distance=3.0,
+                                   fov=60,
+                                   device=None):
+
+    if device is None:
+      device = get_device()
+
+    vertices, faces = mcubes.marching_cubes(mcubes.smooth(voxels), isovalue=0)
+    vertices = torch.tensor(vertices).float()
+    faces = torch.tensor(faces.astype(int))
+
+    max_value = 1
+    min_value = -1
+
+    # Vertex coordinates are indexed by array position, so we need to
+    # renormalize the coordinate system.
+    vertices = (vertices / voxel_size) * (max_value - min_value) + min_value
+    textures = (vertices - vertices.min()) / (vertices.max() - vertices.min())
+
+    vertices = vertices.unsqueeze(0)
+    faces = faces.unsqueeze(0)
+    textures = textures.unsqueeze(0)
+
+    mesh = pytorch3d.structures.Meshes(
+        verts=vertices,
+        faces=faces,
+        textures=pytorch3d.renderer.TexturesVertex(textures),
+    )
+    mesh = mesh.to(device)
+
+    # Get the renderer.
+    renderer = get_mesh_renderer(image_size=image_size)
+
+    # Place a point light in front of the cow.
+    lights = pytorch3d.renderer.PointLights(location=[[0, 0, -3]],
+                                            device=device)
+    R, T = pytorch3d.renderer.cameras.look_at_view_transform(dist=distance,
+                                                             azim=45,
+                                                             elev=30, 
+                                                             device=device)
+
+    # Prepare the camera:
+    cameras = pytorch3d.renderer.FoVPerspectiveCameras(R=R,
+                                                       T=T,
+                                                       fov=fov,
+                                                       device=device)
+    rend = renderer(mesh, cameras=cameras, lights=lights)
+    
+    return (rend.cpu().numpy()[0, ..., :3] * 255).astype(np.uint8)
+
+
+def visualize_point_cloud_image(points,
+                                image_size=256,
+                                color=[0.7, 0.7, 1],
+                                distance=3.0,
+                                fov=60,
+                                device=None):
+
+    if device is None:
+      device = get_device()
+    
+    rgbs = torch.ones_like(points) * torch.tensor(color)
+
+    if len(points.shape) < 3:
+        points = points.unsqueeze(0)
+
+    if len(rgbs.shape) < 3:
+        rgbs = rgbs.unsqueeze(0)
+
+    renderer = get_points_renderer(image_size=image_size)
+    point_cloud = pytorch3d.structures.Pointclouds(points=points,
+                                                   features=rgbs).to(device)
+
+    # Place a point light in front of the cow.
+    lights = pytorch3d.renderer.PointLights(location=[[0, 0, -3]],
+                                            device=device)
+
+    R, T = pytorch3d.renderer.cameras.look_at_view_transform(dist=distance,
+                                                             azim=45,
+                                                             elev=30,
+                                                             device=device)
+    # Prepare the camera:
+    cameras = pytorch3d.renderer.FoVPerspectiveCameras(R=R,
+                                                       T=T,
+                                                       fov=fov,
+                                                       device=device)
+
+    rend = renderer(point_cloud, cameras=cameras)
+    
+    return (rend.cpu().numpy()[0, ..., :3] * 255).astype(np.uint8)
+
+def visualize_mesh_image(mesh,
+                         image_size=256,
+                         distance=3.0,
+                         fov=60,
+                         device=None):
+
+    if device is None:
+      device = get_device()
+
+    vertices, faces = mesh.verts_packed(), mesh.faces_packed()
+
+    textures = (vertices - vertices.min()) / (vertices.max() - vertices.min())
+
+    vertices = vertices.unsqueeze(0)
+    faces = faces.unsqueeze(0)
+    textures = textures.unsqueeze(0)
+
+    mesh = pytorch3d.structures.Meshes(
+        verts=vertices,
+        faces=faces,
+        textures=pytorch3d.renderer.TexturesVertex(textures),
+    )
+    mesh = mesh.to(device)
+
+    # Get the renderer.
+    renderer = get_mesh_renderer(image_size=image_size)
+
+    # Place a point light in front of the cow.
+    lights = pytorch3d.renderer.PointLights(location=[[0, 0, -3]],
+                                            device=device)
+    R, T = pytorch3d.renderer.cameras.look_at_view_transform(dist=distance,
+                                                             azim=45,
+                                                             elev=30,
+                                                             device=device)
+
+    # Prepare the camera:
+    cameras = pytorch3d.renderer.FoVPerspectiveCameras(R=R,
+                                                       T=T,
+                                                       fov=fov,
+                                                       device=device)
+    rend = renderer(mesh, cameras=cameras, lights=lights)
+    
+    return (rend.cpu().numpy()[0, ..., :3] * 255).astype(np.uint8)
