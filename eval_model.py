@@ -1,7 +1,7 @@
 import argparse
 import time
 import torch
-from model import SingleViewto3D
+from model import SingleViewto3D, ImplicitModel
 from r2n2_custom import R2N2
 from  pytorch3d.datasets.r2n2.utils import collate_batched_R2N2
 import dataset_location
@@ -28,12 +28,13 @@ def get_args_parser():
     parser.add_argument('--vis_freq', default=1000, type=int)
     parser.add_argument('--batch_size', default=1, type=int)
     parser.add_argument('--num_workers', default=0, type=int)
-    parser.add_argument('--type', default='vox', choices=['vox', 'point', 'mesh'], type=str)
+    parser.add_argument('--type', default='vox', choices=['vox', 'point', 'mesh', 'implicit'], type=str)
     parser.add_argument('--n_points', default=5000, type=int)
     parser.add_argument('--w_chamfer', default=1.0, type=float)
     parser.add_argument('--w_smooth', default=0.1, type=float)
     parser.add_argument('--load_checkpoint', action='store_true')
     parser.add_argument('--load_step', default=10000, type=int)
+    parser.add_argument('--voxel_res', default=32, type=int)
     return parser
 
 def preprocess(feed_dict):
@@ -80,7 +81,7 @@ def compute_sampling_metrics(pred_points, gt_points, thresholds= [0.01, 0.02, 0.
     return metrics
 
 def evaluate(predictions, mesh_gt, args):
-    if args.type == "vox":
+    if args.type == "vox" or args.type == "implicit":
         voxels_src = predictions
         H,W,D = voxels_src.shape[2:]
         vertices_src, faces_src = mcubes.marching_cubes(voxels_src.detach().cpu().squeeze().numpy(), isovalue=0.5)
@@ -118,7 +119,14 @@ def evaluate_model(args):
         drop_last=True)
     eval_loader = iter(loader)
 
-    model =  SingleViewto3D(args)
+    if args.type == 'implicit':
+        model = ImplicitModel(args)
+        coords = torch.arange(-1, 1, 2. / args.voxel_res) + 1. / args.voxel_res
+        x, y, z = torch.meshgrid(coords, coords, coords)
+        points = torch.stack((x, y, z), dim=-1).unsqueeze(0).cuda()
+    else:
+        model = SingleViewto3D(args)
+
     model.cuda()
     model.eval()
 
@@ -145,7 +153,10 @@ def evaluate_model(args):
 
         read_time = time.time() - read_start_time
 
-        predictions = model(images_gt, args)
+        if args.type == 'implicit':
+            predictions = model(images_gt, points, args)
+        else:
+            predictions = model(images_gt, args)
 
         if args.type == "vox":
             predictions = predictions.permute(0,1,4,3,2)
@@ -159,20 +170,21 @@ def evaluate_model(args):
         # TODO:
         if (step % args.vis_freq) == 0:
             # visualization block
-            plt.imsave(f'results/{step}_gt.png',
-                       images_gt.squeeze(0).cpu().detach().numpy())
+            # print(images_gt.shape)
+            plt.imsave(f'vis/{step}_gt.png', images_gt.squeeze(0).cpu().detach().numpy())
             visualize_mesh(mesh_gt.cpu().detach(),
-                          output_path=f'results/{step}_gt.gif')
+                          output_path=f'vis/{step}_gt.gif')
 
-            if args.type == 'vox':
+            if args.type == 'vox' or args.type == 'implicit':
                 visualize_voxels_as_mesh(predictions[0, 0].cpu().detach(),
-                                         output_path=f'results/{step}_{args.type}.gif')
+                                         output_path=f'vis/{step}_{args.type}.gif')
             elif args.type == 'point':
                 visualize_point_cloud(predictions[0].cpu().detach(),
-                                      output_path=f'results/{step}_{args.type}.gif')
+                                      output_path=f'vis/{step}_{args.type}.gif')
             elif args.type == 'mesh':
                 visualize_mesh(predictions.cpu().detach(),
-                               output_path=f'results/{step}_{args.type}.gif')
+                               output_path=f'vis/{step}_{args.type}.gif')
+            # plt.imsave(f'vis/{step}_{args.type}.png', rend)
 
 
         total_time = time.time() - start_time

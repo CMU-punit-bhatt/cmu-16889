@@ -32,5 +32,12 @@ if __name__ == '__main__':
         os.system("python train_model.py --type 'mesh' --max_iter 10001 --save_freq 2000")
         os.system("python eval_model.py --type 'mesh' --load_checkpoint --load_step 10000 --vis_freq 20")
 
+    elif question == '2.6':
+        os.system("python interpret_model.py --load_step 10000 --index1 100 --index2 340")
+
+    elif question == '3.1':
+        os.system("python train_implicit.py --save_freq 2000 --max_iter 10001")
+        os.system("python eval_model.py --type 'implicit' --load_checkpoint --load_step 10000 --vis_freq 20")
+
     else:
         print('Invalid question!')

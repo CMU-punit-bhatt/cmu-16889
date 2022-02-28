@@ -97,5 +97,64 @@ class SingleViewto3D(nn.Module):
             # TODO:
             deform_vertices_pred = self.decoder(encoded_feat)             
             mesh_pred = self.mesh_pred.offset_verts(deform_vertices_pred.reshape([-1,3]))
-            return  mesh_pred          
+            return  mesh_pred
+
+class ImplicitModel(nn.Module):
+    def __init__(self, args):
+        super(ImplicitModel, self).__init__()
+        self.device = "cuda"
+        vision_model = torchvision_models.__dict__[args.arch](pretrained=True)
+        self.image_encoder = torch.nn.Sequential(*(list(vision_model.children())[:-1]))
+        self.normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
+
+        self.points_encoder = nn.Sequential(
+            # nn.Linear(32 * 32 * 32, 1024),
+            # nn.ReLU(),
+            # nn.Linear(1024, 512)
+            nn.Conv3d(3, 16, 5, stride=2),
+            nn.ReLU(),
+            nn.Conv3d(16, 32, 5, stride=2),
+            nn.ReLU(),
+            Reshape((-1, 5 * 5 * 5 * 32)),
+            nn.Linear(5 * 5 * 5 * 32, 512)
+        )
+
+        self.implicit_decoder =  nn.Sequential(
+            nn.Linear(1024, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 2048),
+            nn.ReLU(),
+            nn.Linear(2048, 32 * 32 *32),
+            Reshape((-1, 1, 32, 32, 32))
+        )
+            
+    def forward(self, images, points, args):
+        results = dict()
+
+        total_loss = 0.0
+        start_time = time.time()
+
+        B = images.shape[0]
+
+        images_normalize = self.normalize(images.permute(0,3,1,2))
+        image_encoded_feat = \
+            self.image_encoder(images_normalize).squeeze(-1).squeeze(-1)
+        
+        # One point of optimization - during inference run this only once.
+        points_encoded = self.points_encoder(points.permute(0, 4, 1, 2, 3))
+
+        assert points_encoded.size(0) == 1
+
+        # Repeating the points vector for all images.
+        points_encoded = points_encoded.repeat(image_encoded_feat.size(0), 1)
+
+        assert image_encoded_feat.shape == points_encoded.shape
+
+        # Concatenating the 2 512 feature vectors to get a single 1024 feature
+        # vector
+        encoded_feat = torch.hstack((image_encoded_feat, points_encoded))
+
+        preds = self.implicit_decoder(encoded_feat)
+
+        return preds
 

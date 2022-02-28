@@ -1,6 +1,6 @@
 # 16-889 Assignment 2: Single View to 3D
 
-## Late Days used - 2
+## Late Days used - 3
 
 
 Goals: In this assignment, you will explore the types of loss and decoder functions for regressing to voxels, point clouds, and mesh representation from single view RGB input.
@@ -122,7 +122,7 @@ python main.py -q 2.2
 
 **Visualizing 3 examples**
 
-| Ground Truth Image | Ground Truth Voxel | Predicted Voxel |
+| Ground Truth Image | Ground Truth Mesh | Predicted Point Cloud |
 | ------------------ | ------------------ | --------------- |
 | ![image](results/gt/80_gt.png) | ![gt](results/gt/80_gt.gif) | ![vox](results/point/80_point.gif) |
 | ![image](results/gt/100_gt.png) | ![gt](results/gt/100_gt.gif) | ![vox](results/point/100_point.gif) |
@@ -149,7 +149,7 @@ python main.py -q 2.3
 
 **Visualizing 3 examples**
 
-| Ground Truth Image | Ground Truth Voxel | Predicted Voxel |
+| Ground Truth Image | Ground Truth Mesh | Predicted Mesh |
 | ------------------ | ------------------ | --------------- |
 | ![image](results/gt/80_gt.png) | ![gt](results/gt/80_gt.gif) | ![vox](results/mesh/80_mesh.gif) |
 | ![image](results/gt/100_gt.png) | ![gt](results/gt/100_gt.gif) | ![vox](results/mesh/100_mesh.gif) |
@@ -199,6 +199,12 @@ The chamfer loss is being calculated as the sum of the distances and so, as `n_p
 !python interpret_model.py --load_step 10000 --index1 100 --index2 340
 ```
 
+OR
+
+```bash
+python main.py -q 2.6
+```
+
 For this question, all my experiments and observations are based on the point cloud encoder-decoder model.
 
 - `What has the decoder learned` - One of the first thoughts that came to my mind when I saw this question was to actually understand what kind of information the decoder contains. In order to view this, I just ran the trained decoder on an encoded feature vector containing zeros. The output was the following
@@ -218,8 +224,37 @@ For this question, all my experiments and observations are based on the point cl
 ## 3. (Extra Credit) Exploring some recent architectures.
 
 ### 3.1 Implicit network (10 points)
-Implement a implicit decoder that takes in as input 3D locations and outputs the occupancy value.
-Some papers for inspiration [[1](https://arxiv.org/abs/2003.04618),[2](https://arxiv.org/abs/1812.03828)]
+
+```bash
+python train_implicit.py --save_freq 2000 --max_iter 10001
+```
+
+OR
+
+```bash
+python main.py -q 3.1
+```
+
+- Model architecture can be found [here (ImplicitModel)](./model.py).
+- A brief description is as follows
+    - The input images (batch) is encoded to a feature vector of length 512 using a pretrained ResNet18 encoder.
+    - A single 4D input (1, 3, 32, 32, 32) is encoded to a 512 feature vector using a combination of 3D Convolution layers and FC layers.
+    - This single feature vector is then repeated to match the input image batch size. This is a small trick to save on memory and compute since these points will be repeated for all.
+    - These two (N, 512) feature vectors are concatenated to form a (N, 1024) feature vector and fed to the Implicit Decoder - a network made up of fully connected layers.
+- This model is loosely inspired from the [Occupancy Networks paper](https://arxiv.org/abs/1812.03828) and some ideas borrowed from the [Convolutional Occupancy Networks paper](https://arxiv.org/abs/2003.04618). Also, referred this [supplementary](http://www.cvlibs.net/publications/Mescheder2019CVPR_supplementary.pdf) on the Occupancy Networks.
+- The reason to go with the 3D convolution was to capture some spatial information about the point coordinates. The idea was that the model would learn to predict the occupancy of neighboring grid cells with high probabilities.
+- Performance
+    - Due to time and constraint, I was able to train this network only for 2000 iterations.
+    - Based on observation, with more training the results would be even better.
+
+**Visualizing 3 examples**
+
+| Ground Truth Image | Ground Truth Voxel | Predicted Voxel using Implicit Decoder|
+| ------------------ | ------------------ | --------------- |
+| ![image](results/gt/240_gt.png) | ![gt](results/gt/240_gt.gif) | ![vox](results/implicit/240_implicit.gif) |
+| ![image](results/gt/300_gt.png) | ![gt](results/gt/300_gt.gif) | ![vox](results/implicit/300_implicit.gif) |
+| ![image](results/gt/360_gt.png) | ![gt](results/gt/360_gt.gif) | ![vox](results/implicit/360_implicit.gif) |
+
 
 ### 3.2 Parametric network (10 points)
 Implement a parametric function that takes in as input sampled 2D points and outputs their respective 3D point.
