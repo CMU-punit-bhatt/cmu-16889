@@ -34,6 +34,9 @@ from dataset import (
     get_nerf_datasets,
     trivial_collate,
 )
+from render_functions import (
+    render_points
+)
 
 
 # Model class containing:
@@ -62,7 +65,7 @@ class Model(torch.nn.Module):
         self.renderer = renderer_dict[cfg.renderer.type](
             cfg.renderer
         )
-    
+
     def forward(
         self,
         ray_bundle
@@ -98,18 +101,21 @@ def render_images(
 
         # TODO (1.3): Visualize xy grid using vis_grid
         if cam_idx == 0 and file_prefix == '':
-            pass
+            image = vis_grid(xy_grid, image_size)
+            # plt.imshow(image)
+            plt.imsave('results/grid1.png', image)
 
         # TODO (1.3): Visualize rays using vis_rays
         if cam_idx == 0 and file_prefix == '':
-            pass
-        
+            image = vis_rays(ray_bundle, image_size)
+            plt.imsave('results/ray1.png', image)
+
         # TODO (1.4): Implement point sampling along rays in sampler.py
-        pass
+        ray_bundle = model.sampler(ray_bundle)
 
         # TODO (1.4): Visualize sample points as point cloud
         if cam_idx == 0 and file_prefix == '':
-            pass
+            render_points('results/points1.png', ray_bundle.sample_points)
 
         # TODO (1.5): Implement rendering in renderer.py
         out = model(ray_bundle)
@@ -124,7 +130,9 @@ def render_images(
 
         # TODO (1.5): Visualize depth
         if cam_idx == 2 and file_prefix == '':
-            pass
+            plt.imsave('results/depth1.png',
+                       np.array(out['depth'].view(image_size[1],
+                                                  image_size[0]).detach().cpu()))
 
         # Save
         if save:
@@ -132,7 +140,7 @@ def render_images(
                 f'{file_prefix}_{cam_idx}.png',
                 image
             )
-    
+
     return all_images
 
 
@@ -148,7 +156,7 @@ def render(
     all_images = render_images(
         model, cameras, cfg.data.image_size
     )
-    imageio.mimsave('images/part_1.gif', [np.uint8(im * 255) for im in all_images])
+    imageio.mimsave('results/part_1.gif', [np.uint8(im * 255) for im in all_images])
 
 
 def train(
@@ -158,7 +166,7 @@ def train(
     model = Model(cfg)
     model = model.cuda(); model.train()
 
-    # Create dataset 
+    # Create dataset
     train_dataset = dataset_from_config(cfg.data)
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
@@ -169,7 +177,7 @@ def train(
     )
     image_size = cfg.data.image_size
 
-    # Create optimizer 
+    # Create optimizer
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=cfg.training.lr
@@ -179,7 +187,7 @@ def train(
     cameras = [item['camera'] for item in train_dataset]
     render_images(
         model, cameras, image_size,
-        save=True, file_prefix='images/part_2_before_training'
+        save=True, file_prefix='results/part_2_before_training'
     )
 
     # Train
@@ -218,12 +226,12 @@ def train(
     # Render images after training
     render_images(
         model, cameras, image_size,
-        save=True, file_prefix='images/part_2_after_training'
+        save=True, file_prefix='results/part_2_after_training'
     )
     all_images = render_images(
         model, create_surround_cameras(3.0, n_poses=20), image_size, file_prefix='part_2'
     )
-    imageio.mimsave('images/part_2.gif', [np.uint8(im * 255) for im in all_images])
+    imageio.mimsave('results/part_2.gif', [np.uint8(im * 255) for im in all_images])
 
 
 def create_model(cfg):
@@ -359,7 +367,7 @@ def train_nerf(
                     model, create_surround_cameras(4.0, n_poses=20, up=(0.0, 0.0, 1.0), focal_length=2.0),
                     cfg.data.image_size, file_prefix='nerf'
                 )
-                imageio.mimsave('images/part_3.gif', [np.uint8(im * 255) for im in test_images])
+                imageio.mimsave('results/part_3.gif', [np.uint8(im * 255) for im in test_images])
 
 
 @hydra.main(config_path='./configs', config_name='sphere')
