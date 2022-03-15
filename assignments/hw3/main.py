@@ -192,6 +192,7 @@ def train(
 
     # Train
     t_range = tqdm.tqdm(range(cfg.training.num_epochs))
+    criterion = torch.nn.MSELoss()
 
     for epoch in t_range:
         for iteration, batch in enumerate(train_dataloader):
@@ -208,7 +209,7 @@ def train(
             out = model(ray_bundle)
 
             # TODO (2.2): Calculate loss
-            loss = None
+            loss = criterion(out['feature'], rgb_gt)
 
             # Backprop
             optimizer.zero_grad()
@@ -306,6 +307,8 @@ def train_nerf(
         collate_fn=trivial_collate,
     )
 
+    criterion = torch.nn.MSELoss()
+
     # Run the main training loop.
     for epoch in range(start_epoch, cfg.training.num_epochs):
         t_range = tqdm.tqdm(enumerate(train_dataloader))
@@ -322,13 +325,14 @@ def train_nerf(
             ray_bundle = get_rays_from_pixels(
                 xy_grid, cfg.data.image_size, camera
             )
+
             rgb_gt = sample_images_at_xy(image, xy_grid)
 
             # Run model forward
-            out = model(ray_bundle)
+            out = model(ray_bundle.to(torch.device('cuda')))
 
             # TODO (3.1): Calculate loss
-            loss = None
+            loss = criterion(out['feature'].view(rgb_gt.shape), rgb_gt)
 
             # Take the training step.
             optimizer.zero_grad()
@@ -337,6 +341,9 @@ def train_nerf(
 
             t_range.set_description(f'Epoch: {epoch:04d}, Loss: {loss:.06f}')
             t_range.refresh()
+
+            del ray_bundle
+            del out
 
         # Adjust the learning rate.
         lr_scheduler.step()
@@ -367,7 +374,7 @@ def train_nerf(
                     model, create_surround_cameras(4.0, n_poses=20, up=(0.0, 0.0, 1.0), focal_length=2.0),
                     cfg.data.image_size, file_prefix='nerf'
                 )
-                imageio.mimsave('results/part_3.gif', [np.uint8(im * 255) for im in test_images])
+                imageio.mimsave(f'results/part_{cfg.part}.gif', [np.uint8(im * 255) for im in test_images])
 
 
 @hydra.main(config_path='./configs', config_name='sphere')

@@ -2,6 +2,8 @@ seed: 1
 
 type: train_nerf
 
+part: 4.3
+
 training:
   num_epochs: 250
   batch_size: 1024
@@ -10,7 +12,7 @@ training:
   lr_scheduler_step_size: 50
   lr_scheduler_gamma: 0.8
 
-  checkpoint_path: ./checkpoints
+  checkpoint_path: checkpoint_nerf_highres
   checkpoint_interval: 50
   resume: True
 
@@ -40,7 +42,7 @@ implicit_function:
   n_hidden_neurons_xyz: 128
   n_hidden_neurons_dir: 64
   density_noise_std: 0.0
-  n_layers_xyz: 6
+  n_layers_xyz: 5
   append_xyz: [3]
 
 
