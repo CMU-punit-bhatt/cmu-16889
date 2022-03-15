@@ -217,13 +217,51 @@ class MLPWithInputSkips(torch.nn.Module):
 
         return y
 
-
 # TODO (3.1): Implement NeRF MLP
 class NeuralRadianceField(torch.nn.Module):
     def __init__(
         self,
         cfg,
-        is_view_dependent=False,
+    ):
+        super().__init__()
+
+        self.harmonic_embedding_xyz = HarmonicEmbedding(3, cfg.n_harmonic_functions_xyz)
+        embedding_dim_xyz = self.harmonic_embedding_xyz.output_dim
+        n_hidden_xyz = cfg.n_hidden_neurons_xyz
+        n_layers_xyz = cfg.n_layers_xyz
+
+        mlp_xyz = []
+        input_size = embedding_dim_xyz
+
+        for i in range(n_layers_xyz):
+            mlp_xyz.append(torch.nn.Linear(input_size, n_hidden_xyz))
+            mlp_xyz.append(torch.nn.ReLU())
+            input_size = n_hidden_xyz
+
+        mlp_xyz.append(torch.nn.Linear(input_size, 1 + 3))
+
+        self.mlp_xyz = torch.nn.Sequential(*mlp_xyz)
+
+    def forward(self, ray_bundle):
+
+        points = ray_bundle.sample_points
+        embed_points = self.harmonic_embedding_xyz(points.view(-1, 3))
+
+        out = self.mlp_xyz(embed_points)
+        densities = F.relu(out[:, 0].view(-1, 1))
+        features = torch.sigmoid(out[:, 1:])
+
+        out = {
+            'density': densities,
+            'feature': features
+        }
+
+        return out
+
+class NeuralRadianceFieldWithViewDependency(torch.nn.Module):
+    def __init__(
+        self,
+        cfg,
     ):
         super().__init__()
 
@@ -248,48 +286,42 @@ class NeuralRadianceField(torch.nn.Module):
 
         # Outputs Density at the first node and the embedding to be used to get
         # directions at the next node.
-        # mlp_xyz.append(torch.nn.Linear(input_size, 1 + n_hidden_xyz))
-        # mlp_xyz.append(torch.nn.ReLU())
-        mlp_xyz.append(torch.nn.Linear(input_size, 1 + 3))
+        mlp_xyz.append(torch.nn.Linear(input_size, 1 + n_hidden_xyz))
+        mlp_xyz.append(torch.nn.ReLU())
 
         self.mlp_xyz = torch.nn.Sequential(*mlp_xyz)
 
-        # mlp_dir = []
-        # input_size = embedding_dim_dir + n_hidden_xyz
+        mlp_dir = []
+        input_size = embedding_dim_dir + n_hidden_xyz
 
-        # for i in range(cfg.append_xyz[0]):
-        #     mlp_dir.append(torch.nn.Linear(input_size, n_hidden_dir))
-        #     mlp_dir.append(torch.nn.ReLU())
-        #     input_size = n_hidden_dir
+        for i in range(cfg.append_xyz[0]):
+            mlp_dir.append(torch.nn.Linear(input_size, n_hidden_dir))
+            mlp_dir.append(torch.nn.ReLU())
+            input_size = n_hidden_dir
 
-        # # Outputs RGB for the input coordinate.
-        # mlp_dir.append(torch.nn.Linear(input_size, 3))
-        # self.mlp_dir = torch.nn.Sequential(*mlp_dir)
+        # Outputs RGB for the input coordinate.
+        mlp_dir.append(torch.nn.Linear(input_size, 3))
+        self.mlp_dir = torch.nn.Sequential(*mlp_dir)
 
     def forward(self, ray_bundle):
 
         points = ray_bundle.sample_points
-        # directions = ray_bundle.directions.unsqueeze(1).repeat(1,
-        #                                                        points.size(1),
-        #                                                        1)
+        directions = ray_bundle.directions.unsqueeze(1).repeat(1,
+                                                               points.size(1),
+                                                               1)
 
         embed_points = self.harmonic_embedding_xyz(points.view(-1, 3))
-        # embed_dirs = self.harmonic_embedding_dir(directions.view(-1, 3))
+        embed_dirs = self.harmonic_embedding_dir(directions.view(-1, 3))
 
         out = self.mlp_xyz(embed_points)
 
-        densities = F.relu(out[:, 0].view(-1, 1))
+        # ReLU done as part of the above sequential module.
+        densities = out[:, 0].view(-1, 1)
 
-        # print(ray_bundle.sample_points.shape)
-        # print(directions.shape)
+        color_input = torch.hstack((embed_dirs, out[:, 1:]))
+        features = torch.sigmoid(self.mlp_dir(color_input))
 
-        # print(out.shape)
-        # print(embed_dirs.shape)
-
-        # color_input = torch.hstack((embed_dirs, out[:, 1:]))
-        # colors = torch.sigmoid(self.mlp_dir(color_input))
-
-        features = torch.sigmoid(out[:, 1:])
+        # features = torch.sigmoid(out[:, 1:])
 
         out = {
             'density': densities,
@@ -301,4 +333,5 @@ class NeuralRadianceField(torch.nn.Module):
 volume_dict = {
     'sdf_volume': SDFVolume,
     'nerf': NeuralRadianceField,
+    'nerf_dir': NeuralRadianceFieldWithViewDependency,
 }
