@@ -1,0 +1,142 @@
+<link rel="stylesheet" href="index.css">
+<h1 id="assignment-3">Assignment 3</h1>
+<p>Number of late days used - 0</p>
+<h2 id="1-differentiable-volume-rendering-point-sampling-10-points-volume-rendering-30-points-">1. Differentiable Volume Rendering - Point sampling (10 points) &amp; Volume rendering (30 points)</h2>
+<pre><code class="lang-bash">python main<span class="hljs-selector-class">.py</span> --config-name=box
+</code></pre>
+<h3 id="visualization">Visualization</h3>
+<table>
+<thead>
+<tr>
+<th>Vis_Grid</th>
+<th>Vis_Rays</th>
+<th>Point Sampling</th>
+<th>Depth Map</th>
+<th>Volume Rendering</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/grid1.png" alt="image"></td>
+<td><img src="results/ray1.png" alt="image"></td>
+<td><img src="results/points1.png" alt="image"></td>
+<td><img src="results/depth1.png" alt="image"></td>
+<td><img src="results/part_1.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-optimizing-a-basic-implicit-volume-random-ray-sampling-5-points-loss-and-training-5-points-">2. Optimizing a basic implicit volume - Random ray sampling (5 points) &amp;  Loss and training (5 points)</h2>
+<pre><code class="lang-bash">python main<span class="hljs-selector-class">.py</span> --config-name=train_box
+</code></pre>
+<h2 id="visualization">Visualization</h2>
+<table>
+<thead>
+<tr>
+<th>Volume Rendering</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/part_2.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-optimizing-a-neural-radiance-field-nerf-30-points-">3. Optimizing a Neural Radiance Field (NeRF) (30 points)</h2>
+<pre><code class="lang-bash">python main<span class="hljs-selector-class">.py</span> --config-name=nerf_lego
+</code></pre>
+<h2 id="visualization">Visualization</h2>
+<p>I played around by varying the harmonic embedding levels (L) while using 4 hidden layers.</p>
+<table>
+<thead>
+<tr>
+<th>L = 3</th>
+<th>L = 5</th>
+<th>L = 6 (Final)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/part_3_3embed.gif" alt="image"></td>
+<td><img src="results/part_3_5embed.gif" alt="image"></td>
+<td><img src="results/part_3.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-nerf-extras">4. NeRF Extras</h2>
+<h2 id="4-1-view-dependence-10-pts-">4.1 View Dependence (10 pts)</h2>
+<pre><code class="lang-bash"><span class="hljs-keyword">python</span> main.<span class="hljs-keyword">py</span> --config-name=nerf_lego_view
+
+# To run the <span class="hljs-keyword">view</span> dependence model <span class="hljs-keyword">on</span> the high <span class="hljs-keyword">res</span> image
+<span class="hljs-keyword">python</span> main.<span class="hljs-keyword">py</span> --config-name=nerf_lego_highres_view
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Result</th>
+<th>Result - High Res</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/part_4.1.gif" alt="image"></td>
+<td><img src="results/part_4.1_highres.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<p>As mentioned in the NeRF paper, in order to learn multi-view consistent, they restrict the network to predict the volume density as a function of only the position
+x, while allowing the color to be predicted as a function of both location
+and viewing direction. If the viewing dependence was increased, say direction was input alongside the position to the entire network, the model could overfit to a variety of weird representations that would justify the training images while absolutely not making sense. For example, with densities being view dependent, it could end up learning the views as a 2D image plane in front of the camera for each view. Thus, the resulting inference time gif, would look perfect from the viewing directions same as the training ones, however this absurd representation would give meaningless renders from unseen views. And so, this would result in poor generalization quality.</p>
+<p><br/></p>
+<h2 id="4-3-high-resolution-imagery-10-pts-">4.3 High Resolution Imagery (10 pts)</h2>
+<pre><code class="lang-bash">python main<span class="hljs-selector-class">.py</span> --config-name=nerf_lego_highres
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>n_pts_per_ray = 32</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/part_4.3_32pts.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>n_pts_per_ray = 64</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/part_4.3_64pts.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>n_pts_per_ray = 128</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/part_4.3_128pts.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>n_pts_per_ray = 256</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/part_4.3_256pts.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<p>I experimented with the hyperparameters - <code>n_pts_per_ray</code>. As can be seen in the results above, as the value increases, the overall rendered images look more well formed. I believe this is because as the number of points per ray are increased, the overall point cloud used for modelling the object becomes denser and so, details learned can be more precise.</p>
+<p>However, with the increase in the number of points, there were issues related to the overall time and compute. The GPU and RAM required increased considerably while training and rendering became slower as well.</p>
