@@ -20,6 +20,8 @@ python main.py --config-name=box
 ```bash
 python main.py --config-name=train_box
 ```
+- Box center: (0.25, 0.25, 0.00)
+- Box side lengths: (2.00, 1.50, 1.50)
 
 ##  Visualization
 
