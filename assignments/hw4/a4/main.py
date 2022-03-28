@@ -66,7 +66,7 @@ class Model(torch.nn.Module):
         self.renderer = renderer_dict[cfg.renderer.type](
             cfg.renderer
         )
-    
+
     def forward(
         self,
         ray_bundle
@@ -120,7 +120,7 @@ def render_images(
                 f'{file_prefix}_{cam_idx}.png',
                 image
             )
-    
+
     return all_images
 
 
@@ -136,7 +136,7 @@ def render(
     all_images = render_images(
         model, cameras, cfg.data.image_size
     )
-    imageio.mimsave('images/part_1.gif', [np.uint8(im * 255) for im in all_images])
+    imageio.mimsave('results/part_1.gif', [np.uint8(im * 255) for im in all_images])
 
 
 def create_model(cfg):
@@ -205,12 +205,12 @@ def train_points(
     point_cloud = np.load(cfg.data.point_cloud_path)
     all_points = torch.Tensor(point_cloud["verts"][::2]).cuda().view(-1, 3)
     all_points = all_points - torch.mean(all_points, dim=0).unsqueeze(0)
-    
+
     point_images = render_points(
         all_points.unsqueeze(0), create_surround_cameras(3.0, n_poses=20, up=(0.0, 1.0, 0.0), focal_length=2.0),
         cfg.data.image_size, file_prefix='points'
     )
-    imageio.mimsave('images/part_2_input.gif', [np.uint8(im * 255) for im in point_images])
+    imageio.mimsave('results/part_2_input.gif', [np.uint8(im * 255) for im in point_images])
 
     # Run the main training loop.
     for epoch in range(0, cfg.training.num_epochs):
@@ -222,8 +222,10 @@ def train_points(
 
             # Get distances and enforce point cloud loss
             distances, gradients = model.implicit_fn.get_distance_and_gradient(points)
-            loss = None # TODO (Q2): Point cloud SDF loss on distances
-            point_loss = loss
+            
+            # This loss should push the value of the SDF to zero at each point in the point cloud (not a loss between distances and gradients).
+            loss = torch.mean(torch.abs(distances), dim=0) * cfg.training.inter_weight # TODO (Q2): Point cloud SDF loss on distances
+            point_loss = loss.item()
 
             # Sample random points in bounding box
             eikonal_points = get_random_points(
@@ -245,7 +247,7 @@ def train_points(
 
         # Checkpoint.
         if (
-            epoch % cfg.training.checkpoint_interval == 0
+            (epoch + 1) % cfg.training.checkpoint_interval == 0
             and len(cfg.training.checkpoint_path) > 0
             and epoch > 0
         ):
@@ -261,17 +263,19 @@ def train_points(
 
         # Render
         if (
-            epoch % cfg.training.render_interval == 0
+            (epoch + 1) % cfg.training.render_interval == 0
             and epoch > 0
         ):
             try:
+                print(f"Trying to render.")
                 test_images = render_geometry(
                     model, create_surround_cameras(3.0, n_poses=20, up=(0.0, 1.0, 0.0), focal_length=2.0),
                     cfg.data.image_size, file_prefix='eikonal', thresh=0.002,
                 )
-                imageio.mimsave('images/part_2.gif', [np.uint8(im * 255) for im in test_images])
+                imageio.mimsave(f'results/part_2.gif', [np.uint8(im * 255) for im in test_images])
             except Exception as e:
                 print("Empty mesh")
+                print(e)
                 pass
 
 
@@ -387,25 +391,25 @@ def train_images(
 
         # Render
         if (
-            epoch % cfg.training.render_interval == 0
+            (epoch + 1) % cfg.training.render_interval == 0
             and epoch > 0
         ):
             test_images = render_images(
                 model, create_surround_cameras(4.0, n_poses=20, up=(0.0, 0.0, 1.0), focal_length=2.0),
                 cfg.data.image_size, file_prefix='volsdf'
             )
-            imageio.mimsave('images/part_3.gif', [np.uint8(im * 255) for im in test_images])
+            imageio.mimsave('results/part_3.gif', [np.uint8(im * 255) for im in test_images])
 
             try:
                 test_images = render_geometry(
                     model, create_surround_cameras(4.0, n_poses=20, up=(0.0, 0.0, 1.0), focal_length=2.0),
                     cfg.data.image_size, file_prefix='volsdf_geometry'
                 )
-                imageio.mimsave('images/part_3_geometry.gif', [np.uint8(im * 255) for im in test_images])
+                imageio.mimsave('results/part_3_geometry.gif', [np.uint8(im * 255) for im in test_images])
             except Exception as e:
                 print("Empty mesh")
                 pass
-                
+
 
 @hydra.main(config_path='configs', config_name='torus')
 def main(cfg: DictConfig):

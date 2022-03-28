@@ -1,9 +1,16 @@
 import torch
 import torch.nn.functional as F
 
-def eikonal_loss(gradients):
+def eikonal_loss(gradients, reduction=None):
     # TODO (Q2): Implement eikonal loss on Nx3 gradients
-    pass
+
+    losses = torch.abs(torch.linalg.norm(gradients, dim=-1) - 1.)
+
+    if reduction == 'sum':
+        return torch.sum(losses)
+
+    return torch.mean(losses)
+
 
 def sphere_loss(signed_distance, points, radius=1.0):
     return torch.square(signed_distance[..., 0] - (torch.norm(points, dim=-1) - radius)).mean()
