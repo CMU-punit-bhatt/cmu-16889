@@ -1,0 +1,153 @@
+seed: 1
+
+type: render
+camera_radius: 10.0
+
+data:
+  image_size: [512, 512]
+
+renderer:
+  type: sphere_tracing
+  chunk_size: 8192
+  near: 0.0
+  far: 5.0
+  max_iters: 64
+
+sampler:
+  type: stratified
+  n_pts_per_ray:
+  min_depth:
+  max_depth:
+
+implicit_function:
+  type: sdf_surface
+
+  sdf:
+    type: trippy
+
+    inner_center:
+      val: [0.0, 0.0, 0.0]
+      opt: True
+
+    inner_radius1:
+      val: [1]
+      opt: False
+
+    inner_radius2:
+      val: [0.8]
+      opt: False
+
+    inner_side:
+      val: [0.5]
+      opt: False
+
+    indent_center1:
+      val: [0.0, 1, 0.25]
+      opt: True
+
+    indent_side1:
+      val: [0.8]
+      opt: False
+
+    indent_center2:
+      val: [0.0, -1, 0.25]
+      opt: True
+
+    indent_side2:
+      val: [0.8]
+      opt: False
+
+    indent_center3:
+      val: [0.0, 0., 1]
+      opt: True
+
+    indent_side3:
+      val: [0.8]
+      opt: False
+
+    indent_center4:
+      val: [0.0, 0., -1]
+      opt: True
+
+    indent_side4:
+      val: [0.8]
+      opt: False
+
+    indent_center5:
+      val: [-1, 0, 0.25]
+      opt: True
+
+    indent_side5:
+      val: [0.8]
+      opt: False
+
+    indent_center6:
+      val: [1, 0, 0.25]
+      opt: True
+
+    indent_side6:
+      val: [0.8]
+      opt: False
+
+    ext_side1:
+      val: [2.5]
+      opt: False
+
+    ext_side2:
+      val: [2.2]
+      opt: False
+
+    ext_indent_side:
+      val: [2.2]
+      opt: False
+    
+    ext_indent_center1:
+      val: [2, 0, 0]
+      opt: True
+
+    ext_indent_center2:
+      val: [-2, 0, 0]
+      opt: True
+
+    ext_indent_center3:
+      val: [0, 2, 0]
+      opt: True
+
+    ext_indent_center4:
+      val: [0, -2, 0]
+      opt: True
+
+    ext_indent_center5:
+      val: [0, 0, 2]
+      opt: True
+
+    ext_indent_center6:
+      val: [0, 0, -2]
+      opt: True
+
+    ring_sphere_radius1:
+      val: [2.4]
+      opt: True
+
+    ring_sphere_radius2:
+      val: [2.38]
+      opt: True
+
+    ring_cube_center1:
+      val: [0, 2.6, 0]
+      opt: True
+
+    ring_cube_center2:
+      val: [0, -2.6, 0]
+      opt: True
+
+    ring_cube_side:
+      val: [5]
+      opt: True
+
+  feature:
+    rainbow: False
+    marvel: False
+    trippy: True
+    val: [1.0, 1.0, 1.0]
+    opt: False

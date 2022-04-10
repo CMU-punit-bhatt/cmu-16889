@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -10,15 +11,29 @@ from ray_utils import RayBundle
 class SphereSDF(torch.nn.Module):
     def __init__(
         self,
-        cfg
+        cfg,
+        center=None,
+        radius=None
     ):
         super().__init__()
 
+        center_grad = False
+        radius_grad = False
+
+        if center is None:
+            center = cfg.center.val
+            center_grad = cfg.center.opt
+
         self.center = torch.nn.Parameter(
-            torch.tensor(cfg.center.val).float().unsqueeze(0), requires_grad=cfg.center.opt
+            torch.tensor(center).float().unsqueeze(0), requires_grad=center_grad
         )
+
+        if radius is None:
+            radius = cfg.radius.val
+            radius_grad = cfg.radius.opt
+
         self.radius = torch.nn.Parameter(
-            torch.tensor(cfg.radius.val).float(), requires_grad=cfg.radius.opt
+            torch.tensor(radius).float(), requires_grad=radius_grad
         )
 
     def forward(self, points):
@@ -35,15 +50,32 @@ class SphereSDF(torch.nn.Module):
 class BoxSDF(torch.nn.Module):
     def __init__(
         self,
-        cfg
+        cfg,
+        center=None,
+        side=None
     ):
         super().__init__()
 
+        center_grad = False
+        side_grad = False
+
+        if center is None:
+            center = cfg.center.val
+            center_grad = cfg.center.opt
+
         self.center = torch.nn.Parameter(
-            torch.tensor(cfg.center.val).float().unsqueeze(0), requires_grad=cfg.center.opt
+            torch.tensor(center).float().unsqueeze(0), requires_grad=center_grad
+        )
+
+        if side is None:
+            side = cfg.side_lengths.val
+            side_grad = cfg.side_lengths.opt
+
+        self.center = torch.nn.Parameter(
+            torch.tensor(center).float().unsqueeze(0), requires_grad=center_grad
         )
         self.side_lengths = torch.nn.Parameter(
-            torch.tensor(cfg.side_lengths.val).float().unsqueeze(0), requires_grad=cfg.side_lengths.opt
+            torch.tensor(side).float().unsqueeze(0), requires_grad=side_grad
         )
 
     def forward(self, points):
@@ -56,7 +88,6 @@ class BoxSDF(torch.nn.Module):
         ) + torch.minimum(torch.max(diff, dim=-1)[0], torch.zeros_like(diff[..., 0]))
 
         return signed_distance.unsqueeze(-1)
-
 
 # Torus SDF class
 class TorusSDF(torch.nn.Module):
@@ -84,12 +115,248 @@ class TorusSDF(torch.nn.Module):
             dim=-1
         )
         return (torch.linalg.norm(q, dim=-1) - self.radii[..., 1]).unsqueeze(-1)
+        
+# Marvel Cube SDF class
+class MarvelCubeSDF(torch.nn.Module):
+    def __init__(
+        self,
+        cfg,
+        offset=[0, 0, 0]
+    ):
+        super().__init__()
 
+        self.offset = torch.Tensor(offset).cuda()
+
+        # Inner hollow sphere with a cube in it.
+        self.inner_sphere1 = SphereSDF(cfg,
+                                       torch.Tensor(cfg.inner_center.val).cuda() + \
+                                          self.offset,
+                                       cfg.inner_radius1.val)
+        self.inner_sphere2 = SphereSDF(cfg,
+                                       torch.Tensor(cfg.inner_center.val).cuda() + \
+                                          self.offset,
+                                       cfg.inner_radius2.val)
+        self.inner_cube = BoxSDF(cfg,
+                                 torch.Tensor(cfg.inner_center.val).cuda() + \
+                                     self.offset,
+                                 cfg.inner_side.val)
+        
+        # Holes in the hollow sphere.
+        self.indent_cube1 = BoxSDF(cfg,
+                                   torch.Tensor(cfg.indent_center1.val).cuda() + self.offset, 
+                                   cfg.indent_side1.val)
+        self.indent_cube2 = BoxSDF(cfg,
+                                   torch.Tensor(cfg.indent_center2.val).cuda() + self.offset, 
+                                   cfg.indent_side2.val)
+        self.indent_cube3 = BoxSDF(cfg,
+                                   torch.Tensor(cfg.indent_center3.val).cuda() + self.offset, 
+                                   cfg.indent_side3.val)
+        self.indent_cube4 = BoxSDF(cfg,
+                                   torch.Tensor(cfg.indent_center4.val).cuda() + self.offset, 
+                                   cfg.indent_side4.val)
+        self.indent_cube5 = BoxSDF(cfg,
+                                   torch.Tensor(cfg.indent_center5.val).cuda() + self.offset, 
+                                   cfg.indent_side5.val)
+        self.indent_cube6 = BoxSDF(cfg,
+                                   torch.Tensor(cfg.indent_center6.val).cuda() + self.offset, 
+                                   cfg.indent_side6.val)
+        
+        # External box
+        self.ext_cube1 = BoxSDF(cfg,
+                                torch.Tensor(cfg.inner_center.val).cuda() + self.offset, 
+                                cfg.ext_side1.val)
+        self.ext_cube2 = BoxSDF(cfg,
+                                torch.Tensor(cfg.inner_center.val).cuda() + self.offset, 
+                                cfg.ext_side2.val)
+        self.ext_indent_cube1 = BoxSDF(cfg,
+                                       torch.Tensor(cfg.ext_indent_center1.val).cuda() + self.offset, 
+                                       cfg.ext_indent_side.val)
+        self.ext_indent_cube2 = BoxSDF(cfg,
+                                       torch.Tensor(cfg.ext_indent_center2.val).cuda() + self.offset, 
+                                       cfg.ext_indent_side.val)
+        self.ext_indent_cube3 = BoxSDF(cfg,
+                                       torch.Tensor(cfg.ext_indent_center3.val).cuda() + self.offset, 
+                                       cfg.ext_indent_side.val)
+        self.ext_indent_cube4 = BoxSDF(cfg,
+                                       torch.Tensor(cfg.ext_indent_center4.val).cuda() + self.offset, 
+                                       cfg.ext_indent_side.val)
+        self.ext_indent_cube5 = BoxSDF(cfg,
+                                       torch.Tensor(cfg.ext_indent_center5.val).cuda() + self.offset, 
+                                       cfg.ext_indent_side.val)
+        self.ext_indent_cube6 = BoxSDF(cfg,
+                                       torch.Tensor(cfg.ext_indent_center6.val).cuda() + self.offset, 
+                                       cfg.ext_indent_side.val)
+
+        # External Ring
+        self.ring_sphere1 = SphereSDF(cfg,
+                                      torch.Tensor(cfg.inner_center.val).cuda() + self.offset, 
+                                      cfg.ring_sphere_radius1.val)
+        self.ring_sphere2 = SphereSDF(cfg,
+                                      torch.Tensor(cfg.inner_center.val).cuda() + self.offset, 
+                                      cfg.ring_sphere_radius2.val)
+        self.ring_cube1 = BoxSDF(cfg,
+                                 torch.Tensor(cfg.ring_cube_center1.val).cuda() + self.offset, 
+                                 cfg.ring_cube_side.val)
+        self.ring_cube2 = BoxSDF(cfg,
+                                 torch.Tensor(cfg.ring_cube_center2.val).cuda() + self.offset, 
+                                 cfg.ring_cube_side.val)
+
+        self.inner_cube_color = torch.Tensor([1., 0.549, 0.]).cuda()
+        self.inner_sphere_color = torch.Tensor([0.831, 0.686, 0.216]).cuda()
+        self.external_box_color = torch.Tensor([0.30980392, 0.4745098 , 0.25882353]).cuda()
+        self.ring_color = torch.Tensor([1., 0.40392157, 0.]).cuda()
+
+    def forward(self, points):
+        points = points.view(-1, 3)
+
+        dists_sphere1 = self.inner_sphere1(points)
+        dists_sphere2 = self.inner_sphere2(points)
+        dists_cube = self.inner_cube(points)
+        dists1 = self.indent_cube1(points)
+        dists2 = self.indent_cube2(points)
+        dists3 = self.indent_cube3(points)
+        dists4 = self.indent_cube4(points)
+        dists5 = self.indent_cube5(points)
+        dists6 = self.indent_cube6(points)
+
+        ring_sphere_dists1 = self.ring_sphere1(points)
+        ring_sphere_dists2 = self.ring_sphere2(points)
+        ring_cube_dists1 = self.ring_cube1(points)
+        ring_cube_dists2 = self.ring_cube2(points)
+
+        ext_dists1 = self.ext_cube1(points)
+        ext_dists2 = self.ext_cube2(points)
+
+        ext_indent_dists1 = self.ext_indent_cube1(points)
+        ext_indent_dists2 = self.ext_indent_cube2(points)
+        ext_indent_dists3 = self.ext_indent_cube3(points)
+        ext_indent_dists4 = self.ext_indent_cube4(points)
+        ext_indent_dists5 = self.ext_indent_cube5(points)
+        ext_indent_dists6 = self.ext_indent_cube6(points)
+
+        ring_dists = torch.amax(torch.hstack((ring_sphere_dists1,
+                                              - ring_sphere_dists2
+                                              - ring_cube_dists1,
+                                              - ring_cube_dists2)),
+                                dim=-1,
+                                keepdim=True)
+
+        dists = torch.amax(torch.hstack((ext_dists1,
+                                         - ext_dists2, 
+                                         - ext_indent_dists1, 
+                                         - ext_indent_dists2, 
+                                         - ext_indent_dists3, 
+                                         - ext_indent_dists4, 
+                                         - ext_indent_dists5, 
+                                         - ext_indent_dists6)),
+                           dim=-1,
+                           keepdims=True)
+
+        dists = torch.minimum(ring_dists, dists)
+
+        dists = torch.minimum(dists, dists_sphere1)
+        dists = torch.amax(torch.hstack((dists,
+                                         - dists_sphere2,
+                                         - dists1,
+                                         - dists2, 
+                                         - dists3, 
+                                         - dists4, 
+                                         - dists5, 
+                                         - dists6)),
+                           dim=-1,
+                           keepdims=True)
+        dists = torch.minimum(dists, dists_cube)
+
+        return dists
+    
+    def get_textures(self, points):
+      
+        eps = 1e-3
+        base_color = torch.ones_like(points).cuda() * \
+            torch.Tensor([0.03529412, 0.4745098 , 0.41176471]).cuda()
+        mask1 = torch.torch.linalg.norm(points - self.offset, dim=-1) < \
+            self.inner_sphere1.radius - eps
+        mask2 = torch.torch.linalg.norm(points - self.offset, dim=-1) < \
+            self.inner_sphere2.radius - eps
+        mask3 = torch.torch.linalg.norm(points - self.offset, dim=-1) > \
+            self.inner_sphere1.radius + eps
+        mask4 = torch.torch.linalg.norm(points - self.offset, dim=-1) >= \
+            self.ring_sphere2.radius - 0.2
+        base_color[mask1] = torch.Tensor([0.831, 0.686, 0.216]).cuda()
+        base_color[mask2] = torch.Tensor([1., 0.549, 0.]).cuda()
+        base_color[mask3] = torch.Tensor([0.30980392, 0.4745098 , 0.25882353]).cuda()
+        base_color[mask4] = torch.Tensor([1., 0.40392157, 0.]).cuda()
+
+        return base_color
+
+# Trippy class
+class TrippySDF(torch.nn.Module):
+    def __init__(
+        self,
+        cfg
+    ):
+        super().__init__()
+
+        self.offset_val = 4.5
+
+        self.marvel_cube1 = MarvelCubeSDF(cfg, offset=[self.offset_val, 0, 0])
+        self.marvel_cube2 = MarvelCubeSDF(cfg, offset=[- self.offset_val, 0, 0])
+        self.marvel_cube3 = MarvelCubeSDF(cfg, offset=[0, self.offset_val, 0])
+        self.marvel_cube4 = MarvelCubeSDF(cfg, offset=[0, - self.offset_val, 0])
+        self.marvel_cube5 = MarvelCubeSDF(cfg, offset=[0, 0, 0])
+
+    def forward(self, points):
+        points = points.view(-1, 3)
+        
+        dists1 = self.marvel_cube1(points)
+        dists2 = self.marvel_cube2(points)
+        dists3 = self.marvel_cube3(points)
+        dists4 = self.marvel_cube4(points)
+        dists5 = self.marvel_cube5(points)
+
+        dists = torch.amin(torch.hstack((dists1,
+                                         dists2, 
+                                         dists3, 
+                                         dists4,
+                                         dists5)),
+                           dim=-1,
+                           keepdims=True)
+
+        return dists
+    
+    def get_textures(self, points):
+
+        texts1 = self.marvel_cube1.get_textures(points)
+        texts2 = self.marvel_cube2.get_textures(points)
+        texts3 = self.marvel_cube3.get_textures(points)
+        texts4 = self.marvel_cube4.get_textures(points)
+        texts5 = self.marvel_cube5.get_textures(points)
+
+        base_color = texts5
+
+        eps = 1e-3
+        mask1 = torch.torch.linalg.norm(points - self.marvel_cube1.offset,
+                                        dim=-1) <= self.marvel_cube1.ring_sphere1.radius + eps
+        mask2 = torch.torch.linalg.norm(points - self.marvel_cube2.offset, 
+                                        dim=-1) <= self.marvel_cube2.ring_sphere1.radius + eps
+        mask3 = torch.torch.linalg.norm(points - self.marvel_cube3.offset, 
+                                        dim=-1) <= self.marvel_cube3.ring_sphere1.radius + eps
+        mask4 = torch.torch.linalg.norm(points - self.marvel_cube4.offset, 
+                                        dim=-1) <= self.marvel_cube4.ring_sphere1.radius + eps
+
+        base_color[mask1] = texts1[mask1]
+        base_color[mask2] = texts2[mask2]
+        base_color[mask3] = texts3[mask3]
+        base_color[mask4] = texts4[mask4]
+
+        return base_color
 
 sdf_dict = {
     'sphere': SphereSDF,
     'box': BoxSDF,
     'torus': TorusSDF,
+    'marvel': MarvelCubeSDF,
+    'trippy': TrippySDF
 }
 
 
@@ -105,6 +372,8 @@ class SDFSurface(torch.nn.Module):
             cfg.sdf
         )
         self.rainbow = cfg.feature.rainbow if 'rainbow' in cfg.feature else False
+        self.marvel = cfg.feature.marvel if 'marvel' in cfg.feature else False
+        self.trippy = cfg.feature.trippy if 'trippy' in cfg.feature else False
         self.feature = torch.nn.Parameter(
             torch.ones_like(torch.tensor(cfg.feature.val).float().unsqueeze(0)), requires_grad=cfg.feature.opt
         )
@@ -123,6 +392,8 @@ class SDFSurface(torch.nn.Module):
                 0.02,
                 0.98
             )
+        elif self.marvel or self.trippy:
+            base_color = self.sdf.get_textures(points)
         else:
             base_color = 1.0
 

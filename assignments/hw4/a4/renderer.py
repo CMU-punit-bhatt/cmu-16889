@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 from typing import List, Optional, Tuple
@@ -50,8 +51,8 @@ class SphereTracingRenderer(torch.nn.Module):
 
         eps = 5e-7
         N = origins.size(0)
-
-        z_vals = torch.ones((N, 1)).to(self.device)
+        
+        z_vals = torch.zeros((N, 1)).to(self.device)
 
         for i in range(self.max_iters):
             points = directions * z_vals + origins
@@ -110,6 +111,10 @@ class SphereTracingRenderer(torch.nn.Module):
 
         return out
 
+# Other density functions - 
+# 1 - Naive, 
+# 2 - 1 if x < 0 else exp(- x / beta).
+# 3 - 
 
 def sdf_to_density(signed_distance, alpha, beta):
     # TODO (Q3): Convert signed distance to density with alpha, beta parameters
@@ -117,12 +122,32 @@ def sdf_to_density(signed_distance, alpha, beta):
     # In order to see the effect of different alpha,beta vals, plot this
     # for a linspace signed dist from -5 to 5 for varying alphas and betas
     # on same graph.
-    def cdf(s):
-        return torch.where(s <= 0,
-                           0.5 * torch.exp(s / beta),
-                           1 - 0.5 * torch.exp(- s / beta))
+    distribution = torch.distributions.laplace.Laplace(0, scale=beta)
+    densities = alpha * distribution.cdf(- signed_distance)
 
-    densities = alpha * cdf(- signed_distance)
+    return densities
+
+def naive_sdf_to_density(signed_distance, s=1):
+    # TODO (Q3): Convert signed distance to density with alpha, beta parameters
+
+    def distribution(x):
+
+        return s * torch.exp(- s * x) / (1 + torch.exp(- s * x)) ** 2 
+        
+    densities = distribution(signed_distance)
+
+    return densities
+
+def exp_sdf_to_density(signed_distance, beta=0.05):
+    # TODO (Q3): Convert signed distance to density with alpha, beta parameters
+
+    def distribution(x):
+
+        return torch.where(x >= 0,
+                           torch.exp(- x / beta), 
+                           torch.tensor(1.).float().cuda())
+        
+    densities = distribution(signed_distance)
 
     return densities
 
@@ -138,6 +163,9 @@ class VolumeSDFRenderer(torch.nn.Module):
         self.alpha = cfg.alpha
         self.beta = cfg.beta
 
+        self.sdf_to_density = cfg.sdf_to_density 
+        self.s = cfg.naive_sdf_to_density_s
+        
     def _compute_weights(
         self,
         deltas,
@@ -197,7 +225,13 @@ class VolumeSDFRenderer(torch.nn.Module):
             # Call implicit function with sample points
             distance, color = implicit_fn.get_distance_color(cur_ray_bundle.sample_points)
             color = color.view(-1, n_pts, 3)
-            density = sdf_to_density(distance, self.alpha, self.beta) # TODO (Q3): convert SDF to density
+            
+            if self.sdf_to_density == 'default':
+                density = sdf_to_density(distance, self.alpha, self.beta) # TODO (Q3): convert SDF to density
+            elif self.sdf_to_density == 'naive':
+                density = naive_sdf_to_density(distance, self.s) # TODO (Q3): convert SDF to density
+            elif self.sdf_to_density == 'exp':
+                density = exp_sdf_to_density(distance, self.beta)
 
             # Compute length of each ray segment
             depth_values = cur_ray_bundle.sample_lengths[..., 0]

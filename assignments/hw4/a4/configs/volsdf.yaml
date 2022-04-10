@@ -12,7 +12,10 @@ renderer:
   white_background: False
 
   alpha: 10.0
-  beta: 0.05
+  beta: 1
+
+  sdf_to_density: default
+  naive_sdf_to_density_s: 0.05
 
 sampler:
   type: stratified

@@ -1,0 +1,361 @@
+<link rel="stylesheet" href="index.css">
+<h1 id="assignment-4">Assignment 4</h1>
+<h2 id="number-of-late-days-used-1">Number of late days used - 1</h2>
+<h2 id="1-sphere-tracing-30pts-">1. Sphere Tracing (30pts)</h2>
+<pre><code class="lang-bash"><span class="hljs-keyword">python</span> -m a4.main --config-name=<span class="hljs-keyword">torus</span>
+</code></pre>
+<h3 id="visualization">Visualization</h3>
+<p><img src="results/part_1.gif" alt="image"></p>
+<p>This should save <code>part_1.gif</code> in the `images&#39; folder. Please include this in your submission along with a short writeup describing your implementation.</p>
+<h3 id="implementational-details">Implementational Details</h3>
+<ul>
+<li>A variable (<code>z_vals</code>) is maintained to keep track of the distance from the <code>origins</code> for sampling points.</li>
+<li>Starting from a distance (<code>z_vals</code>) zero in the direction of rays along each pixel (given by <code>directions</code>), we calculate the points.</li>
+<li>The implicit function is used to generate the distance of the closest surface from these points.</li>
+<li>These distances are then used to update the tracking variable <code>z_vals</code>.<ul>
+<li>The variable is updated by simply adding the new found distances.</li>
+</ul>
+</li>
+<li>This entire process is done for either a fixed number of iterations (<code>max_iters</code>) or till all the distances are below some threshold (<code>eps</code>).</li>
+<li>The mask is simply calculated as the boolean mask for the condition, dists &lt;= eps<ul>
+<li>All points that are already on the surface or are very close to the surface are marked True.</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-optimizing-a-neural-sdf-30pts-">2. Optimizing a Neural SDF (30pts)</h2>
+<pre><code class="lang-bash">python -m <span class="hljs-built_in">a4</span>.main --<span class="hljs-built_in">config</span>-name=points
+</code></pre>
+<h3 id="visualizations">Visualizations</h3>
+<table>
+<thead>
+<tr>
+<th>Point Cloud Input</th>
+<th>Neural Surface Mesh</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/part_2_input.gif" alt="image"></td>
+<td><img src="results/part_2.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="implementational-details">Implementational Details</h3>
+<ol>
+<li>MLP<ul>
+<li>I experimented with the number of layers and the number of neurons per layer and finally settled on the following configuration to get my best result (shown above)<ul>
+<li># Layers - 7 (6 hidden + 1 output)</li>
+<li># Neurons per layer - 256</li>
+</ul>
+</li>
+<li>The way the overall network has been designed is to have a common MLP (# dists layers - 1).<ul>
+<li>During training, this is expected to learn the features such that it would be able to output the distance for the input embedded point.</li>
+<li>And with additional layers (# color layers), it can predict the color as well.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>Loss</p>
+<ul>
+<li><p>There are 3 components to this loss</p>
+<ul>
+<li><p><strong>Points loss</strong> - Considering that all the ground truth points should lie on the surface, the average distance of these points from the nearest surface as outputted by the model is the first component. In order to obtain my best result, I had to multiply this with a weight  &lt; 1 (used the same one as inter weight). Without this weight, the model seemed to overfit during training resulting in disjointed/lumpy mesh as can be seen below.</p>
+<p><img src="results/part_2_lumpy.gif" alt="image"></p>
+</li>
+<li><p><strong>Distance loss</strong> - This ensures that not all distances go to 0 by taking the exponential values of the distances. To be honest, I tried removing this to see the impact but couldn&#39;t see a big difference in the final results or the losses. However, kept it in cause it wasn&#39;t doing any harm and logically it makes sense. Potentially, could try increasing the weight to see its impact.</p>
+</li>
+<li><p><strong>Eikonal loss</strong> - This ensures that the norm of the gradient of the distances with respect to the points is close to 1. To be honest, I wasn&#39;t sure about the intuition behind this constraint. But after reading parts of <a href="https://arxiv.org/pdf/2002.10099.pdf">Implicit Geometric Regularization for Learning Shapes</a>, it started to make sense. I believe this constraint helps ensure that the SDF learned by the model is a plausible one. Considering that the main constraint while training a model to learn the SDF is the Points Loss, it is highly likely that the model could learn some random SDF that is 0 for the GT points but is arbitrary elsewhere. Hence this constraint helps provide a smoother SDF as a consequence of the <code>plane reproduction</code> property.</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="experimentations">Experimentations</h3>
+<ul>
+<li>Sharing some of the experiments done and the results obtained.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Layers</th>
+<th>Neruons</th>
+<th>Iterations</th>
+<th>Weighted Point Loss</th>
+<th>Results</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>6</td>
+<td>128</td>
+<td>5k</td>
+<td>No</td>
+<td><img src="results/2/6_128_5k_No.gif" alt="image"></td>
+</tr>
+<tr>
+<td>6</td>
+<td>128</td>
+<td>10k</td>
+<td>No</td>
+<td><img src="results/2/6_128_10k_No.gif" alt="image"></td>
+</tr>
+<tr>
+<td>6</td>
+<td>256</td>
+<td>5k</td>
+<td>No</td>
+<td><img src="results/2/6_256_5k_No.gif" alt="image"></td>
+</tr>
+<tr>
+<td>6</td>
+<td>128</td>
+<td>10k</td>
+<td>Yes</td>
+<td><img src="results/2/6_128_10k_Yes.gif" alt="image"></td>
+</tr>
+<tr>
+<td>6</td>
+<td>128</td>
+<td>10k</td>
+<td>Yes</td>
+<td><img src="results/2/6_128_10k_Yes.gif" alt="image"></td>
+</tr>
+<tr>
+<td>7</td>
+<td>128</td>
+<td>5k</td>
+<td>No</td>
+<td><img src="results/2/7_128_5k_No.gif" alt="image"></td>
+</tr>
+<tr>
+<td>7</td>
+<td>128</td>
+<td>10k</td>
+<td>No</td>
+<td><img src="results/2/7_128_10k_No.gif" alt="image"></td>
+</tr>
+<tr>
+<td><strong>7</strong></td>
+<td><strong>256</strong></td>
+<td><strong>10k</strong></td>
+<td><strong>Yes</strong></td>
+<td><img src="results/2/7_256_10k_Yes.gif" alt="image"></td>
+</tr>
+<tr>
+<td>8</td>
+<td>128</td>
+<td>5k</td>
+<td>No</td>
+<td><img src="results/2/8_128_5k_No.gif" alt="image"></td>
+</tr>
+<tr>
+<td>8</td>
+<td>256</td>
+<td>10k</td>
+<td>No</td>
+<td><img src="results/2/8_256_10k_No.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-volsdf-30-pts-">3. VolSDF (30 pts)</h2>
+<pre><code class="lang-bash">python -m <span class="hljs-built_in">a4</span>.main --<span class="hljs-built_in">config</span>-name=volsdf
+</code></pre>
+<h3 id="alpha">Alpha</h3>
+<p><img src="results/3/alpha.png" alt="image"></p>
+<ul>
+<li>The above graph shows the SDF to density function for 3 values of alpha (1 (red), 2 (blue), 3 (green)).</li>
+<li>As can be seen above and in the formula, alpha helps scale the CDF function. Thus, it helps control the y-intercept and the maximum value that the function can obtain.</li>
+</ul>
+<h3 id="beta">Beta</h3>
+<p><img src="results/3/beta.png" alt="image"></p>
+<ul>
+<li>The above graph shows the SDF to density function for 4 values of beta
+(0.05 (red), 1e-4 (blue), 1 (green), 100 (orange)).</li>
+<li><p>As can be seen above and in the formula, beta controls the sharpness of the transition from minimum to maximum. For higher values of beta, this transition is extremely gradual. Thus, for a beta close to infinity, the curve would be a line at y = 0.5. For smaller values of beta, the transition would be instantaneous. Thus, for a beta very close to 0, the function would essentially be a square wave.</p>
+</li>
+
+<ol>
+<li><p>How does high <code>beta</code> bias your learned SDF? What about low <code>beta</code>?</p>
+<ul>
+<li>High beta results in an almost uniform distribution of density and so, results in blurry/not so sharp renders. A low beta on the other hand, results in a very sharp render due to the sudden transition of density from 0 to 1 at the surface.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Beta Value</th>
+<th>Geometry</th>
+<th>Colored Model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Low (1e-3)</td>
+<td><img src="results/3/geometry_1e-3.gif" alt="image"></td>
+<td><img src="results/3/1e-3.gif" alt="image"></td>
+</tr>
+<tr>
+<td>Default (0.05)</td>
+<td><img src="results/3/geometry_default.gif" alt="image"></td>
+<td><img src="results/3/default.gif" alt="image"></td>
+</tr>
+<tr>
+<td>High (1)</td>
+<td><img src="results/3/geometry_1.gif" alt="image"></td>
+<td><img src="results/3/1.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<li><p>Would an SDF be easier to train with volume rendering and low <code>beta</code> or high <code>beta</code>? Why?</p>
+<ul>
+<li>Training would be easier and much faster for a higher beta value. Due to the densities being uniform, the training signal from densitites wouldn&#39;t vary with different values, leading to a faster convergence albeit not a good one.</li>
+</ul>
+</li>
+<li><p>Would you be more likely to learn an accurate surface with high <code>beta</code> or low <code>beta</code>? Why?</p>
+<ul>
+<li>To obtain an accurate surface, using a low beta value would be beneficial. A low beta value would help identify the surface properly as there is a drastic transition in the density around the surfaces.</li>
+</ul>
+</li>
+</ol>
+<h3 id="visualizations">Visualizations</h3>
+<table>
+<thead>
+<tr>
+<th>Geometry</th>
+<th>Colored Model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/part_3_geometry.gif" alt="image"></td>
+<td><img src="results/part_3.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<p>For the above results, I had alpha = 10 and beta = 0.05. I believe this worked well because the beta is low but not too low where in the model can&#39;t train properly and ends up learning some unnecessary high frequency details leading to generalization issues.</p>
+<h2 id="4-neural-surface-extras-choose-one-more-than-one-is-extra-credit-">4. Neural Surface Extras (CHOOSE ONE! More than one is extra credit)</h2>
+<h3 id="4-1-render-a-large-scene-with-sphere-tracing-10-pts-">4.1. Render a Large Scene with Sphere Tracing (10 pts)</h3>
+<p>Defined a new class <code>MarvelCubeSDF</code> to try and recreate the following artifact from the No Way Home movie</p>
+<p><img src="results/4/marvel_cube.jpg" alt="image"></p>
+<pre><code class="lang-bash"><span class="hljs-comment"># Single</span>
+python -m <span class="hljs-built_in">a4</span>.main --<span class="hljs-built_in">config</span>-name=marvel
+</code></pre>
+<ul>
+<li><strong>Inner Hollow Sphere (2 visible + 7 invisible)</strong><ul>
+<li>Made using a sphere and another sphere to hollow it out.</li>
+<li>6 additional cubes were used to cut out certain parts.</li>
+</ul>
+</li>
+</ul>
+<p><img src="results/4/part_4_1_inner_sphere.gif" alt="image"></p>
+<ul>
+<li><strong>Outer Box (1 visible + 7 invisible)</strong><ul>
+<li>Made using a cube and another to hollow it out.</li>
+<li>6 additional cubes used to cut out certain parts.</li>
+</ul>
+</li>
+</ul>
+<p><img src="results/4/part_4_1_box.gif" alt="image"></p>
+<ul>
+<li><strong>Dr. Strange&#39;s portal ring (1 visible + 3 invisible)</strong><ul>
+<li>Made using a sphere and another sphere to hollow it out.</li>
+<li>2 additional cubes to slice out the ring.</li>
+</ul>
+</li>
+</ul>
+<p><img src="results/4/part_4_1_single.gif" alt="image"></p>
+<p>The above has 4 visible and 17 invisible shapes.</p>
+<p>Not sure if this counted towards the 20 shapes requirements, defined another class <code>TrippySDF</code> to replicate 5 of these leading to <strong>20 visible and 85 invisible shapes</strong>.</p>
+<pre><code class="lang-bash"><span class="hljs-comment"># Multiple</span>
+python -m <span class="hljs-built_in">a4</span>.main --<span class="hljs-built_in">config</span>-name=trippy
+</code></pre>
+<p><img src="results/4/part_4_1_trippy.gif" alt="image"></p>
+<h3 id="4-2-fewer-training-views-10-pts-">4.2 Fewer Training Views (10 pts)</h3>
+<table>
+<thead>
+<tr>
+<th># Images</th>
+<th>Geometry</th>
+<th>Colored Model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10</td>
+<td><img src="results/4/part_3_geometry_10idx.gif" alt="image"></td>
+<td><img src="results/4/part_3_10idx.gif" alt="image"></td>
+</tr>
+<tr>
+<td>25</td>
+<td><img src="results/4/part_3_geometry_25idx.gif" alt="image"></td>
+<td><img src="results/4/part_3_25idx.gif" alt="image"></td>
+</tr>
+<tr>
+<td>75</td>
+<td><img src="results/4/part_3_geometry_75idx.gif" alt="image"></td>
+<td><img src="results/4/part_3_75idx.gif" alt="image"></td>
+</tr>
+<tr>
+<td>100</td>
+<td><img src="results/part_3_geometry.gif" alt="image"></td>
+<td><img src="results/part_3.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-3-alternate-sdf-to-density-conversions-10-pts-">4.3 Alternate SDF to Density Conversions (10 pts)</h3>
+<ol>
+<li>Naive SDF</li>
+<pre><code class="lang-bash"># <span class="hljs-keyword">For</span> Naive SDF to Density <span class="hljs-keyword">function</span>
+<span class="hljs-title">python</span> -m a4.main <span class="hljs-comment">--config-name=volsdf_naive</span>
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>s</th>
+<th>Geometry</th>
+<th>Colored Model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5</td>
+<td><img src="results/4/geometry_naive_5s.gif" alt="image"></td>
+<td><img src="results/4/naive_5s.gif" alt="image"></td>
+</tr>
+<tr>
+<td>25</td>
+<td><img src="results/4/geometry_naive_25s.gif" alt="image"></td>
+<td><img src="results/4/naive_25s.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>
+<li>Exponential SDF</li>
+</ol>
+<pre><code class="lang-bash"># <span class="hljs-keyword">For</span> Exponential SDF to Density <span class="hljs-keyword">function</span>
+<span class="hljs-title">python</span> -m a4.main <span class="hljs-comment">--config-name=volsdf_exp</span>
+</code></pre>
+<ul>
+<li>This is defined as follows</li>
+</ul>
+<p><img src="results/4/exp.png" alt="image"></p>
+<table>
+<thead>
+<tr>
+<th>Beta</th>
+<th>Geometry</th>
+<th>Colored Model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.05</td>
+<td><img src="results/4/geometry_exp0.05.gif" alt="image"></td>
+<td><img src="results/4/exp0.05.gif" alt="image"></td>
+</tr>
+<tr>
+<td>1</td>
+<td><img src="results/4/geometry_exp1.gif" alt="image"></td>
+<td><img src="results/4/exp1.gif" alt="image"></td>
+</tr>
+</tbody>
+</table>

@@ -131,12 +131,24 @@ def render(
     model = Model(cfg)
     model = model.cuda(); model.eval()
 
+    camera_radius = cfg.camera_radius if 'camera_radius' in cfg else 3.0
+
     # Render spiral
-    cameras = create_surround_cameras(3.0, n_poses=20, up=(0.0, 0.0, 1.0))
+    cameras = create_surround_cameras(camera_radius,
+                                      n_poses=20,
+                                      up=(0.0, 0.0, 1.0))
     all_images = render_images(
         model, cameras, cfg.data.image_size
     )
-    imageio.mimsave('results/part_1.gif', [np.uint8(im * 255) for im in all_images])
+
+    if cfg.implicit_function.sdf.type == 'marvel':
+        imageio.mimsave('results/part_4_1_marvel.gif', 
+                        [np.uint8(im * 255) for im in all_images])
+    elif cfg.implicit_function.sdf.type == 'trippy':
+        imageio.mimsave('results/part_4_1_trippy.gif', 
+                        [np.uint8(im * 255) for im in all_images])
+    else:
+        imageio.mimsave('results/part_1.gif', [np.uint8(im * 255) for im in all_images])
 
 
 def create_model(cfg):
