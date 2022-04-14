@@ -1,0 +1,530 @@
+<link rel="stylesheet" href="index.css">
+<h1 id="assignment-5">Assignment 5</h1>
+<h2 id="number-of-late-days-used-0">Number of late days used - 0</h2>
+<p><br></p>
+<h2 id="q1-classification-model-40-points-">Q1. Classification Model (40 points)</h2>
+<pre><code class="lang-bash">python main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">1</span>
+</code></pre>
+<p><br></p>
+<h3 id="test-accuracy-of-best-model">Test Accuracy of best model</h3>
+<ul>
+<li><strong>98.111%</strong></li>
+</ul>
+<p><br></p>
+<h3 id="visualization">Visualization</h3>
+<table>
+<thead>
+<tr>
+<th>Point Cloud</th>
+<th>Predicted Class</th>
+<th>Ground Truth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/cls/default_10000/mismatch_406_p2.0_l0.0.gif" alt="plot"></td>
+<td>Lamp (2)</td>
+<td>Chair (0)</td>
+</tr>
+<tr>
+<td><img src="results/cls/default_10000/mismatch_671_p0.0_l1.0.gif" alt="plot"></td>
+<td>Chair (0)</td>
+<td>Vase (1)</td>
+</tr>
+<tr>
+<td><img src="results/cls/default_10000/mismatch_916_p1.0_l2.0.gif" alt="plot"></td>
+<td>Vase (1)</td>
+<td>Lamp (2)</td>
+</tr>
+<tr>
+<td><img src="results/cls/default_10000/match_540_p0.0_l0.0.gif" alt="plot"></td>
+<td>Chair (0)</td>
+<td>Chair (0)</td>
+</tr>
+<tr>
+<td><img src="results/cls/default_10000/match_713_p1.0_l1.0.gif" alt="plot"></td>
+<td>Vase (1)</td>
+<td>Vase (1)</td>
+</tr>
+<tr>
+<td><img src="results/cls/default_10000/match_769_p2.0_l2.0.gif" alt="plot"></td>
+<td>Lamp (2)</td>
+<td>Lamp (2)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="interpretation">Interpretation</h3>
+<ul>
+<li>While the model performs well with a high test accuracy, there are certain corner cases where the prediction fails. In all such cases, the shape of the actual object resembles the other classes closely. In the above examples, an oddly shaped chair resembles wall mounted lamps closely. Similarly the vase that resembles a couch chair. The lamp is wide and tall and bears resemblance to other vase examples.</li>
+</ul>
+<h2 id="q2-segmentation-model-40-points-">Q2. Segmentation Model (40 points)</h2>
+<pre><code class="lang-bash">python main<span class="hljs-selector-class">.py</span> -<span class="hljs-selector-tag">q</span> <span class="hljs-number">2</span>
+</code></pre>
+<p><br></p>
+<h3 id="test-accuracy-of-best-model">Test Accuracy of best model</h3>
+<ul>
+<li><strong>90.471%</strong></li>
+</ul>
+<p><br></p>
+<h3 id="visualization">Visualization</h3>
+<table>
+<thead>
+<tr>
+<th>Predicted Point Cloud</th>
+<th>Ground Truth Point Cloud</th>
+<th>Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/seg/default_10000/526_0.967_match_pred.gif" alt="plot"></td>
+<td><img src="results/seg/default_10000/526_0.967_match_gt.gif" alt="plot"></td>
+<td>0.967</td>
+</tr>
+<tr>
+<td><img src="results/seg/default_10000/103_0.879_match_gt.gif" alt="plot"></td>
+<td><img src="results/seg/default_10000/103_0.879_match_pred.gif" alt="plot"></td>
+<td>0.879</td>
+</tr>
+<tr>
+<td><img src="results/seg/default_10000/339_0.937_match_gt.gif" alt="plot"></td>
+<td><img src="results/seg/default_10000/339_0.937_match_pred.gif" alt="plot"></td>
+<td>0.925</td>
+</tr>
+<tr>
+<td><img src="results/seg/default_10000/351_0.506_mismatch_gt.gif" alt="plot"></td>
+<td><img src="results/seg/default_10000/351_0.506_mismatch_pred.gif" alt="plot"></td>
+<td>0.506</td>
+</tr>
+<tr>
+<td><img src="results/seg/default_10000/225_0.562_mismatch_gt.gif" alt="plot"></td>
+<td><img src="results/seg/default_10000/225_0.562_mismatch_pred.gif" alt="plot"></td>
+<td>0.562</td>
+</tr>
+<tr>
+<td><img src="results/seg/default_10000/96_0.538_mismatch_gt.gif" alt="plot"></td>
+<td><img src="results/seg/default_10000/96_0.538_mismatch_pred.gif" alt="plot"></td>
+<td>0.538</td>
+</tr>
+</tbody>
+</table>
+<h3 id="interpretation">Interpretation</h3>
+<ul>
+<li>As can be seen, some of the examples for which the model performs the best are standard chairs wherein each section has a clear distinction. However, chairs where in the secctions don&#39;t have a clear distinction and are just extended into one another are the ones which the model finds hard to decipher. For example, in the second last example the ground truth shows the handles to be yellow and these are slowly merged into the red area. However, the prediction is unable to find any distinction and the entire thing has been marked as handles. Similar issues/misclassification patterns can be seen in the other 2 bad examples as well.</li>
+</ul>
+<h2 id="q3-robustness-analysis-20-points-">Q3. Robustness Analysis (20 points)</h2>
+<p><br></p>
+<h3 id="experiment-1-perturbation">Experiment 1 - Perturbation</h3>
+<pre><code class="lang-bash"># <span class="hljs-keyword">For</span> Classification <span class="hljs-keyword">task</span>.
+python main.py -q <span class="hljs-number">3</span>-cls-exp1
+
+# <span class="hljs-keyword">For</span> Segmentation <span class="hljs-keyword">task</span>.
+python main.py -q <span class="hljs-number">3</span>-seg-exp1
+</code></pre>
+<ul>
+<li>Some noise is added to each point.</li>
+<li>This noise is generated by sampling a random value uniformly from -0.5 to 0.5.</li>
+<li>Then another parameter (<code>perturb_scale</code>) is used to scale the noise value up. Therefore, a <code>perturb_scale = 4</code> would result in a noise value ranging between -2 to 2.</li>
+<li>The points generated now are then passed through the model and the results are used to analyze the model robustness.</li>
+</ul>
+<p>Note: The first row in the tables represent the best model peroformances as shown in task 1 and 2.</p>
+<p><img src="plots/3-cls-exp1.png" alt="plot"></p>
+<table>
+<thead>
+<tr>
+<th>Perturb Scale</th>
+<th>Classification Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td><strong>0.981</strong></td>
+</tr>
+<tr>
+<td>0.5</td>
+<td>0.869</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0.849</td>
+</tr>
+<tr>
+<td>1.5</td>
+<td>0.675</td>
+</tr>
+<tr>
+<td>2</td>
+<td>0.647</td>
+</tr>
+<tr>
+<td>3</td>
+<td>0.647</td>
+</tr>
+<tr>
+<td>4</td>
+<td>0.647</td>
+</tr>
+<tr>
+<td>5</td>
+<td>0.647</td>
+</tr>
+<tr>
+<td>6</td>
+<td>0.647</td>
+</tr>
+<tr>
+<td>7</td>
+<td>0.647</td>
+</tr>
+</tbody>
+</table>
+<p><img src="plots/3-seg-exp1.png" alt="plot"></p>
+<table>
+<thead>
+<tr>
+<th>Perturb Scale</th>
+<th>Segmentation Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td><strong>0.905</strong></td>
+</tr>
+<tr>
+<td>0.5</td>
+<td>0.66</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0.561</td>
+</tr>
+<tr>
+<td>1.5</td>
+<td>0.510</td>
+</tr>
+<tr>
+<td>2</td>
+<td>0.471</td>
+</tr>
+<tr>
+<td>3</td>
+<td>0.413</td>
+</tr>
+<tr>
+<td>4</td>
+<td>0.384</td>
+</tr>
+<tr>
+<td>5</td>
+<td>0.365</td>
+</tr>
+<tr>
+<td>6</td>
+<td>0.348</td>
+</tr>
+<tr>
+<td>7</td>
+<td>0.312</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+<h3 id="experiment-2-rotation">Experiment 2 - Rotation</h3>
+<pre><code class="lang-bash"># <span class="hljs-keyword">For</span> Classification <span class="hljs-keyword">task</span>.
+python main.py -q <span class="hljs-number">3</span>-cls-exp2
+
+# <span class="hljs-keyword">For</span> Segmentation <span class="hljs-keyword">task</span>.
+python main.py -q <span class="hljs-number">3</span>-seg-exp2
+</code></pre>
+<ul>
+<li>The points are rotated by certain angle along each of the 3 axes.</li>
+<li>The angle is determined by the argument <code>rotation_angle</code>.</li>
+<li>The points generated now are then passed through the model and the results are used to analyze the model robustness.</li>
+</ul>
+<p>Note: The first row in the tables represent the best model peroformances as shown in task 1 and 2.</p>
+<p><img src="plots/3-cls-exp2.png" alt="plot"></p>
+<table>
+<thead>
+<tr>
+<th>Rotation Angle</th>
+<th>Classification Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td><strong>0.981</strong></td>
+</tr>
+<tr>
+<td>5</td>
+<td>0.972</td>
+</tr>
+<tr>
+<td>10</td>
+<td>0.94</td>
+</tr>
+<tr>
+<td>15</td>
+<td>0.854</td>
+</tr>
+<tr>
+<td>20</td>
+<td>0.682</td>
+</tr>
+<tr>
+<td>30</td>
+<td>0.359</td>
+</tr>
+<tr>
+<td>45</td>
+<td>0.243</td>
+</tr>
+<tr>
+<td>60</td>
+<td>0.23</td>
+</tr>
+<tr>
+<td>90</td>
+<td>0.751</td>
+</tr>
+</tbody>
+</table>
+<p><img src="plots/3-seg-exp2.png" alt="plot"></p>
+<table>
+<thead>
+<tr>
+<th>Rotation Angle</th>
+<th>Segmentation Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0</strong></td>
+<td><strong>0.905</strong></td>
+</tr>
+<tr>
+<td>5</td>
+<td>0.88</td>
+</tr>
+<tr>
+<td>10</td>
+<td>0.823</td>
+</tr>
+<tr>
+<td>15</td>
+<td>0.746</td>
+</tr>
+<tr>
+<td>20</td>
+<td>0.654</td>
+</tr>
+<tr>
+<td>30</td>
+<td>0.511</td>
+</tr>
+<tr>
+<td>45</td>
+<td>0.263</td>
+</tr>
+<tr>
+<td>60</td>
+<td>0.237</td>
+</tr>
+<tr>
+<td>90</td>
+<td>0.398</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+<h3 id="experiment-3-number-of-points">Experiment 3 - Number of Points</h3>
+<pre><code class="lang-bash"># <span class="hljs-keyword">For</span> Classification <span class="hljs-keyword">task</span>.
+python main.py -q <span class="hljs-number">3</span>-cls-exp3
+
+# <span class="hljs-keyword">For</span> Segmentation <span class="hljs-keyword">task</span>.
+python main.py -q <span class="hljs-number">3</span>-seg-exp3
+</code></pre>
+<ul>
+<li>The number of points used for the task are modified.</li>
+<li>This is controlled by the argument <code>num_points</code>.</li>
+<li>These points are randomly sampled from the total points.</li>
+<li>The points generated now are then passed through the model and the results are used to analyze the model robustness.</li>
+</ul>
+<p>Note: The first row in the tables represent the best model peroformances as shown in task 1 and 2.</p>
+<p><img src="plots/3-cls-exp3.png" alt="plot"></p>
+<table>
+<thead>
+<tr>
+<th>#Points</th>
+<th>Classification Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>10000</strong></td>
+<td><strong>0.981</strong></td>
+</tr>
+<tr>
+<td>8000</td>
+<td>0.981</td>
+</tr>
+<tr>
+<td>6000</td>
+<td>0.979</td>
+</tr>
+<tr>
+<td>4000</td>
+<td>0.981</td>
+</tr>
+<tr>
+<td>2000</td>
+<td>0.98</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>0.974</td>
+</tr>
+<tr>
+<td>500</td>
+<td>0.974</td>
+</tr>
+<tr>
+<td>100</td>
+<td>0.925</td>
+</tr>
+<tr>
+<td>75</td>
+<td>0.89</td>
+</tr>
+<tr>
+<td>50</td>
+<td>0.818</td>
+</tr>
+<tr>
+<td>25</td>
+<td>0.593</td>
+</tr>
+<tr>
+<td>10</td>
+<td>0.311</td>
+</tr>
+</tbody>
+</table>
+<p><img src="plots/3-seg-exp3.png" alt="plot"></p>
+<table>
+<thead>
+<tr>
+<th>#Points</th>
+<th>Segmentation Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>10000</strong></td>
+<td><strong>0.905</strong></td>
+</tr>
+<tr>
+<td>8000</td>
+<td>0.905</td>
+</tr>
+<tr>
+<td>6000</td>
+<td>0.905</td>
+</tr>
+<tr>
+<td>4000</td>
+<td>0.904</td>
+</tr>
+<tr>
+<td>2000</td>
+<td>0.904</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>0.898</td>
+</tr>
+<tr>
+<td>500</td>
+<td>0.887</td>
+</tr>
+<tr>
+<td>100</td>
+<td>0.825</td>
+</tr>
+<tr>
+<td>75</td>
+<td>0.807</td>
+</tr>
+<tr>
+<td>50</td>
+<td>0.784</td>
+</tr>
+<tr>
+<td>25</td>
+<td>0.72</td>
+</tr>
+<tr>
+<td>10</td>
+<td>0.618</td>
+</tr>
+</tbody>
+</table>
+<h2 id="q4-bonus-question-locality-20-points-">Q4. Bonus Question - Locality (20 points)</h2>
+<ul>
+<li>Model implemented - PointNet++<ul>
+<li><code>PointNet2_Cls</code> in <code>locality_models.py</code>.</li>
+</ul>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>PointNet Cls</th>
+<th>PointNet++ Cls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Test Accuracy</strong></td>
+<td>98.111%</td>
+<td>93.494%</td>
+</tr>
+</tbody>
+</table>
+<h3 id="visualization">Visualization</h3>
+<table>
+<thead>
+<tr>
+<th>Point Cloud</th>
+<th>Predicted Class</th>
+<th>Ground Truth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="results/cls_locality/default_10000/match_325_p0.0_l0.0.gif" alt="plot"></td>
+<td>Chair (0)</td>
+<td>Chair (0)</td>
+</tr>
+<tr>
+<td><img src="results/cls_locality/default_10000/mismatch_636_p2.0_l1.0.gif" alt="plot"></td>
+<td>Lamp (2)</td>
+<td>Vase (1)</td>
+</tr>
+<tr>
+<td><img src="results/cls_locality/default_10000/mismatch_865_p0.0_l2.0.gif" alt="plot"></td>
+<td>Chair (0)</td>
+<td>Lamp (2)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>PointNet seems to have a higher accuracy as compared to PointNet++.</li>
+<li>I believe this is mostly due to how constrained the current problem is - just 3 classes.</li>
+<li>However, as expected PointNet++ seems to be more robust.</li>
+<li>Based on the below plot, it can be seen that even as the object is rotated, PointNet++ performs fairly decent and better as compared to just PointNet.</li>
+</ul>
+<p><img src="plots/4.png" alt="plot"></p>

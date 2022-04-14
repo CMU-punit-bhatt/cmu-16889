@@ -9,8 +9,9 @@ from data_loader import get_data_loader
 from utils import save_checkpoint, create_dir
 
 def train(train_dataloader, model, opt, epoch, args, writer):
-    
+
     model.train()
+    model.to(args.device)
     step = epoch*len(train_dataloader)
     epoch_loss = 0
 
@@ -20,12 +21,12 @@ def train(train_dataloader, model, opt, epoch, args, writer):
         labels = labels.to(args.device).to(torch.long)
 
         # ------ TO DO: Forward Pass ------
-        predictions = 
+        predictions = model(point_clouds)
 
         if (args.task == "seg"):
             labels = labels.reshape([-1])
             predictions = predictions.reshape([-1, args.num_seg_class])
-            
+
         # Compute Loss
         criterion = torch.nn.CrossEntropyLoss()
         loss = criterion(predictions, labels)
@@ -41,8 +42,9 @@ def train(train_dataloader, model, opt, epoch, args, writer):
     return epoch_loss
 
 def test(test_dataloader, model, epoch, args, writer):
-    
+
     model.eval()
+    model.to(args.device)
 
     # Evaluation in Classification Task
     if (args.task == "cls"):
@@ -55,14 +57,15 @@ def test(test_dataloader, model, epoch, args, writer):
 
             # ------ TO DO: Make Predictions ------
             with torch.no_grad():
-                pred_labels = 
+                pred_labels = model(point_clouds)
+                pred_labels = torch.argmax(torch.sigmoid(pred_labels), dim=-1)
             correct_obj += pred_labels.eq(labels.data).cpu().sum().item()
             num_obj += labels.size()[0]
 
         # Compute Accuracy of Test Dataset
         accuracy = correct_obj / num_obj
-                
-        
+
+
     # Evaluation in Segmentation Task
     else:
         correct_point = 0
@@ -73,9 +76,10 @@ def test(test_dataloader, model, epoch, args, writer):
             labels = labels.to(args.device).to(torch.long)
 
             # ------ TO DO: Make Predictions ------
-            with torch.no_grad():     
-                pred_labels = 
-
+            with torch.no_grad():
+                pred_labels = model(point_clouds)
+                pred_labels = torch.argmax(torch.sigmoid(pred_labels), dim=-1)
+                
             correct_point += pred_labels.eq(labels.data).cpu().sum().item()
             num_point += labels.view([-1,1]).size()[0]
 
@@ -99,11 +103,11 @@ def main(args):
 
     # ------ TO DO: Initialize Model ------
     if args.task == "cls":
-        model = 
+        model = cls_model()
     else:
-        model = 
-    
-    # Load Checkpoint 
+        model = seg_model()
+
+    # Load Checkpoint
     if args.load_checkpoint:
         model_path = "{}/{}.pt".format(args.checkpoint_dir,args.load_checkpoint)
         with open(model_path, 'rb') as f:
@@ -124,17 +128,17 @@ def main(args):
 
     print ("======== start training for {} task ========".format(args.task))
     print ("(check tensorboard for plots of experiment logs/{})".format(args.task+"_"+args.exp_name))
-    
+
     for epoch in range(args.num_epochs):
 
         # Train
         train_epoch_loss = train(train_dataloader, model, opt, epoch, args, writer)
-        
+
         # Test
         current_acc = test(test_dataloader, model, epoch, args, writer)
 
         print ("epoch: {}   train loss: {:.4f}   test accuracy: {:.4f}".format(epoch, train_epoch_loss, current_acc))
-        
+
         # Save Model Checkpoint Regularly
         if epoch % args.checkpoint_every == 0:
             print ("checkpoint saved at epoch {}".format(epoch))
@@ -167,12 +171,12 @@ def create_parser():
     parser.add_argument('--exp_name', type=str, default="exp", help='The name of the experiment')
 
     # Directories and checkpoint/sample iterations
-    parser.add_argument('--main_dir', type=str, default='./data/')
+    parser.add_argument('--main_dir', type=str, default='/content/data/')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoints')
     parser.add_argument('--checkpoint_every', type=int , default=10)
 
     parser.add_argument('--load_checkpoint', type=str, default='')
-    
+
 
     return parser
 

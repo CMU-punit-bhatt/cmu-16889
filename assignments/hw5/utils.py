@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import torch
 import pytorch3d
 from pytorch3d.renderer import (
@@ -7,7 +8,11 @@ from pytorch3d.renderer import (
     PointsRenderer,
     PointsRasterizer,
 )
+from tqdm.auto import tqdm
 import imageio
+
+def generate_gif(images, path):
+    imageio.mimsave(path, images, fps=15)
 
 def save_checkpoint(epoch, model, args, best=False):
     if best:
@@ -52,7 +57,7 @@ def get_points_renderer(
     return renderer
 
 
-def viz_seg (verts, labels, path, device):
+def viz_seg (verts, labels, path, device, num_points=10000):
     """
     visualize segmentation result
     output: a 360-degree gif
@@ -70,7 +75,7 @@ def viz_seg (verts, labels, path, device):
 
     sample_verts = verts.unsqueeze(0).repeat(30,1,1).to(torch.float)
     sample_labels = labels.unsqueeze(0)
-    sample_colors = torch.zeros((1,10000,3))
+    sample_colors = torch.zeros((1, num_points, 3))
 
     # Colorize points based on segmentation labels
     for i in range(6):
@@ -81,7 +86,51 @@ def viz_seg (verts, labels, path, device):
     point_cloud = pytorch3d.structures.Pointclouds(points=sample_verts, features=sample_colors).to(device)
 
     renderer = get_points_renderer(image_size=image_size, background_color=background_color, device=device)
-    rend = renderer(point_cloud, cameras=c).cpu().numpy() # (30, 256, 256, 3)
+    rend = (renderer(point_cloud, cameras=c).cpu().numpy() * 255.).astype(np.uint8) # (30, 256, 256, 3)
 
     imageio.mimsave(path, rend, fps=15)
 
+def get_point_cloud_gif_360(verts,
+                            rgb,
+                            output_path='mygif.gif',
+                            distance=10.0,
+                            fov=60,
+                            image_size=256,
+                            background_color=[1., 1, 1],
+                            steps=range(360, 0, -15)):
+
+    device = torch.device('cuda')
+
+    if len(verts.shape) < 3:
+        verts = verts.unsqueeze(0)
+
+    if len(rgb.shape) < 3:
+        rgb = rgb.unsqueeze(0)
+
+    renderer = get_points_renderer(
+        image_size=image_size, background_color=background_color
+    )
+    point_cloud = pytorch3d.structures.Pointclouds(points=verts,
+                                                   features=rgb).to(device)
+
+    # Place a point light in front of the cow.
+    lights = pytorch3d.renderer.PointLights(location=[[0, 0, -3]],
+                                            device=device)
+
+    images = []
+
+    for i in tqdm(steps):
+
+        R, T = pytorch3d.renderer.cameras.look_at_view_transform(dist=distance,
+                                                                 azim=i,
+                                                                 device=device)
+        # Prepare the camera:
+        cameras = pytorch3d.renderer.FoVPerspectiveCameras(R=R,
+                                                           T=T,
+                                                           fov=fov,
+                                                           device=device)
+
+        rend = renderer(point_cloud, cameras=cameras)
+        images.append((rend.cpu().numpy()[0, ..., :3] * 255).astype(np.uint8))
+
+    return generate_gif(images, output_path)

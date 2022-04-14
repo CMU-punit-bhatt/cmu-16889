@@ -2,8 +2,6 @@ from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import torch
 
-
-
 class CustomDataSet(Dataset):
     """Load data under folders"""
     def __init__(self, args, train=True):
